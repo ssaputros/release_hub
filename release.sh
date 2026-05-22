@@ -196,6 +196,10 @@ if [ "$TYPE" == "HRM Apps" ]; then
     echo "============================================================"
 fi
 
+if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
+    bash "${SCRIPT_DIR}/init_appstore.sh" "$ID"
+fi
+
 echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
 git checkout -- android/ ios/ >/dev/null 2>&1
 rm -f icon/*.png icon/icon_raw >/dev/null 2>&1

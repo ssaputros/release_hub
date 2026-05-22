@@ -24,5 +24,18 @@
       "Icon": "https://drive.google.com/open?id=1bOCvsDE5qNiZmpljt1RL_AXGfpALaoyD",
       "Notes": ""
     }
+  },
+  "netzsch": {
+    "Branch": "netzsch",
+    "Project": {
+      "Project Name": "NETZSCH",
+      "Region": "Indonesia",
+      "App Name": "NETZSCH",
+      "Type": "HRM Apps",
+      "Base URL": "https://netzsch.hashmicro.co",
+      "Database": "netzsch-live",
+      "Icon": "https://drive.google.com/open?id=1ULVT9zlU-iXUpN2GHFyarq00qYYguu08",
+      "Notes": ""
+    }
   }
 }
