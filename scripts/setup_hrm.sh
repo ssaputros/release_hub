@@ -72,13 +72,22 @@ fi
 
 if [ "$BRANCH_EXISTS" == "true" ]; then
     echo "  🚀 Project Exist! Pindah ke branch '$ID'..."
-    git checkout "$ID" >/dev/null 2>&1
+    if ! git checkout "$ID" >/dev/null 2>&1; then
+        echo "  ❌ Error: Gagal pindah ke branch '$ID'. Harap commit/stash perubahan Anda."
+        exit 1
+    fi
     git pull origin "$ID" >/dev/null 2>&1
 else
     echo "  🆕 Project Baru! Membuat branch '$ID' dari '$STABLE_BRANCH'..."
-    git checkout "$STABLE_BRANCH" >/dev/null 2>&1
+    if ! git checkout "$STABLE_BRANCH" >/dev/null 2>&1; then
+        echo "  ❌ Error: Gagal pindah ke branch '$STABLE_BRANCH'. Harap commit/stash perubahan Anda."
+        exit 1
+    fi
     git pull origin "$STABLE_BRANCH" >/dev/null 2>&1
-    git checkout -b "$ID" >/dev/null 2>&1
+    if ! git checkout -b "$ID" >/dev/null 2>&1; then
+        echo "  ❌ Error: Gagal membuat branch baru '$ID'."
+        exit 1
+    fi
 fi
 
 # 4. Update .env file
@@ -198,6 +207,24 @@ if [ -n "$FIREBASE_PROJECT_ID" ]; then
     else
         echo "  ⚠️ 'flutterfire' tidak ditemukan. Firebase configure dilewati."
     fi
+fi
+
+# 8. Change icon app
+OPTIMIZED_ICON="${SCRIPT_DIR}/icon/icon.png"
+if [ -f "$OPTIMIZED_ICON" ]; then
+    echo "  🖼️  Menerapkan icon kustom ke project..."
+    mkdir -p "icon"
+    cp "$OPTIMIZED_ICON" "icon/icon.png"
+    
+    if command -v flutter >/dev/null 2>&1; then
+        flutter pub get >/dev/null 2>&1
+        dart run flutter_launcher_icons >/dev/null 2>&1
+        echo "  ✅ Icon berhasil diperbarui."
+    else
+        echo "  ⚠️ Command 'flutter' atau 'dart' tidak ditemukan. Gagal generate launcher icons."
+    fi
+else
+    echo "  ℹ️  Tidak ada custom icon baru (menggunakan icon bawaan project)."
 fi
 
 echo "  ✅ Setup HRM selesai."

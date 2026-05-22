@@ -24,3 +24,5 @@ Semua ini dilakukan di lokasi hrm app
 6. Update nama app
 
 7. Connect firebase project ke apps
+
+8. Change icon app

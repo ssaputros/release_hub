@@ -10,6 +10,7 @@ OPTIMIZED_ICON="${ICON_DIR}/icon.png"
 
 # Pastikan folder icon ada
 mkdir -p "$ICON_DIR"
+rm -f "$OPTIMIZED_ICON"
 
 if [ -z "$ICON_URL" ]; then
     echo "⚠️ Peringatan: URL icon tidak diberikan."
@@ -32,6 +33,20 @@ if [ ! -s "$RAW_ICON" ]; then
     echo "❌ Gagal mengunduh icon."
     rm -f "$RAW_ICON"
     exit 1
+fi
+
+# Deteksi apakah gambar adalah icon default berdasarkan MD5 hash
+MD5_HASH=""
+if command -v md5 >/dev/null 2>&1; then
+    MD5_HASH=$(md5 -q "$RAW_ICON")
+elif command -v md5sum >/dev/null 2>&1; then
+    MD5_HASH=$(md5sum "$RAW_ICON" | awk '{print $1}')
+fi
+
+if [ "$MD5_HASH" == "d07b84363bb9d56771e6cea4f327d285" ]; then
+    echo "ℹ️  Gambar terdeteksi sebagai Default Icon. Menggunakan icon bawaan project."
+    rm -f "$RAW_ICON"
+    exit 0
 fi
 
 echo "⚙️ Mengoptimalkan icon (Safe Zone 15% padding, background putih)..."

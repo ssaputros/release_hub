@@ -195,3 +195,9 @@ if [ "$TYPE" == "HRM Apps" ]; then
     bash "${SCRIPT_DIR}/scripts/setup_hrm.sh" "$ID" "$REGION" "$APP_NAME" "$TYPE" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME"
     echo "============================================================"
 fi
+
+echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
+git checkout -- android/ ios/ >/dev/null 2>&1
+rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
+echo "✅ Lingkungan bersih kembali."
+
