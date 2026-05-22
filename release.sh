@@ -43,6 +43,19 @@ generate_id() {
 
 # Path file projects.json (satu folder dengan script)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+
+# Trap function untuk membersihkan temporary files dan memainkan suara ketika script berhenti
+on_exit() {
+    echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
+    git checkout -- android/ ios/ >/dev/null 2>&1
+    rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
+
+    if [ -f "${SCRIPT_DIR}/assets/done_sound.wav" ]; then
+        afplay "${SCRIPT_DIR}/assets/done_sound.wav" >/dev/null 2>&1 &
+    fi
+}
+trap on_exit EXIT
+
 PROJECT_FILE="${SCRIPT_DIR}/projects.json"
 
 if [ -n "$RUN_ID" ]; then
@@ -168,7 +181,7 @@ if [ -n "$ICON" ]; then
     echo "============================================================"
     echo "🖼️ MENYIAPKAN IKON APLIKASI"
     echo "============================================================"
-    bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON"
+    bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON" || { echo "❌ Gagal menyiapkan ikon!"; exit 1; }
     echo ""
 fi
 
@@ -188,20 +201,18 @@ APP_PACKAGE_NAME="${PREFIX}.${ID}"
 echo "============================================================"
 echo "📊 INFORMASI APLIKASI (Release Hub)"
 echo "============================================================"
-bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME"
+bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
 
 if [ "$TYPE" == "HRM Apps" ]; then
     echo "============================================================"
-    bash "${SCRIPT_DIR}/scripts/setup_hrm.sh" "$ID" "$REGION" "$APP_NAME" "$TYPE" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME"
+    bash "${SCRIPT_DIR}/scripts/setup_hrm.sh" "$ID" "$REGION" "$APP_NAME" "$TYPE" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup HRM gagal!"; exit 1; }
     echo "============================================================"
 fi
 
 if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
-    bash "${SCRIPT_DIR}/init_appstore.sh" "$ID"
+    bash "${SCRIPT_DIR}/init_appstore.sh" "$ID" || { echo "❌ Proses init appstore gagal!"; exit 1; }
 fi
 
-echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
-git checkout -- android/ ios/ >/dev/null 2>&1
-rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
-echo "✅ Lingkungan bersih kembali."
-
+if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
+    bash "${SCRIPT_DIR}/build_app.sh" "$ID" || { echo "❌ Proses build gagal!"; exit 1; }
+fi

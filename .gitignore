@@ -50,3 +50,7 @@ icon/*
 
 # Ignore environment variables
 .env
+
+# Ignore files inside build_result but keep the folder
+build_result/*
+!build_result/.gitkeep
