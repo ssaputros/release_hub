@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Ignore files in icon directory but keep the folder
+icon/*
+!icon/.gitkeep

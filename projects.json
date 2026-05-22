@@ -1,0 +1,28 @@
+{
+  "smkgemanusantara": {
+    "Branch": "smkgemanusantara",
+    "Project": {
+      "Project Name": "SMK Gema Nusantara",
+      "Region": "Indonesia",
+      "App Name": "SMKG HRIS",
+      "Type": "HRM Apps",
+      "Base URL": "https://smkgenus.hash-008.com",
+      "Database": "smkgenus-new",
+      "Icon": "https://drive.google.com/open?id=1RXPYUaGmlZrDOslpTXc8BT6mNfwY9uOl",
+      "Notes": ""
+    }
+  },
+  "sst": {
+    "Branch": "sst",
+    "Project": {
+      "Project Name": "Sinergi Selaras Telematika",
+      "Region": "Indonesia",
+      "App Name": "SST HRIS",
+      "Type": "HRM Apps",
+      "Base URL": "https://sinergiselarastelematika.hashmicro.co",
+      "Database": "SSTdbLive",
+      "Icon": "https://drive.google.com/open?id=1bOCvsDE5qNiZmpljt1RL_AXGfpALaoyD",
+      "Notes": ""
+    }
+  }
+}

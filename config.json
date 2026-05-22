@@ -1,0 +1,9 @@
+{
+    "firebase_project": "hashmicro-production-17",
+    "types": {
+        "HRM Apps": {
+            "prefix": "com.hashmicro.eva",
+            "location": "~/Projects/HashMicro/HrmApp"
+        }
+    }
+}
