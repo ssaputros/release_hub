@@ -186,7 +186,12 @@ fi
 APP_PACKAGE_NAME="${PREFIX}.${ID}"
 
 echo "============================================================"
-echo "📊 INFORMASI APLIKASI"
+echo "📊 INFORMASI APLIKASI (Release Hub)"
 echo "============================================================"
 bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME"
-echo "============================================================"
+
+if [ "$TYPE" == "HRM Apps" ]; then
+    echo "============================================================"
+    bash "${SCRIPT_DIR}/scripts/setup_hrm.sh" "$ID" "$REGION" "$APP_NAME" "$TYPE" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME"
+    echo "============================================================"
+fi
