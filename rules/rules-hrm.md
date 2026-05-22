@@ -22,3 +22,5 @@ Semua ini dilakukan di lokasi hrm app
 5. Update android package name (ganti juga package di android/app/src/main/kotlin/com/example/hrm_apps/MainActivity.kt) dan ios bundle id
 
 6. Update nama app
+
+7. Connect firebase project ke apps

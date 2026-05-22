@@ -179,4 +179,25 @@ if [ -f "ios/Runner/Info.plist" ]; then
 fi
 echo "  ✅ App Name di-update ke: $APP_NAME"
 
+# 7. Connect Firebase Project
+if [ -n "$FIREBASE_PROJECT_ID" ]; then
+    echo "  🔥 Menghubungkan ke Firebase Project ($FIREBASE_PROJECT_ID)..."
+    if command -v flutterfire >/dev/null 2>&1; then
+        flutterfire configure \
+            --project="$FIREBASE_PROJECT_ID" \
+            --out="lib/firebase_options.dart" \
+            --ios-bundle-id="$APP_PACKAGE_NAME" \
+            --android-package-name="$APP_PACKAGE_NAME" \
+            --yes >/dev/null 2>&1
+        
+        if [ $? -eq 0 ]; then
+            echo "  ✅ Firebase berhasil dihubungkan."
+        else
+            echo "  ❌ Gagal menghubungkan Firebase (cek autentikasi firebase-cli)."
+        fi
+    else
+        echo "  ⚠️ 'flutterfire' tidak ditemukan. Firebase configure dilewati."
+    fi
+fi
+
 echo "  ✅ Setup HRM selesai."
