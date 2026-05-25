@@ -12,6 +12,7 @@ NOTES=""
 RUN_ID=""
 UPLOAD_ONLY_ID=""
 UPLOAD_ONLY_MODE=false
+TESTFLIGHT_MODE=false
 
 # Fungsi untuk menampilkan bantuan
 show_help() {
@@ -25,6 +26,7 @@ show_help() {
     echo "Opsi:"
     echo "  -h, --help            Menampilkan bantuan ini"
     echo "  -u, --upload [ID]     Hanya mengunggah build terakhir (upload only) ke Google Drive. Bisa juga tanpa ID untuk memilih interaktif."
+    echo "  -t, --testflight [ID] Hanya mengunggah IPA terakhir ke TestFlight External dan generate Public Link."
     echo "  --project <nama>      Menentukan Nama Project baru"
     echo "  --region <region>     Menentukan Region Project"
     echo "  --app-name <nama>     Menentukan Nama Aplikasi"
@@ -48,6 +50,14 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help) show_help ;;
         -u|--upload) 
+            UPLOAD_ONLY_MODE=true
+            if [[ -n "$2" && "$2" != -* ]]; then
+                UPLOAD_ONLY_ID="$2"
+                shift
+            fi
+            ;;
+        -t|--testflight)
+            TESTFLIGHT_MODE=true
             UPLOAD_ONLY_MODE=true
             if [[ -n "$2" && "$2" != -* ]]; then
                 UPLOAD_ONLY_ID="$2"
@@ -220,40 +230,63 @@ if [ -n "$UPLOAD_ONLY_ID" ]; then
         PROJECT=$(jq -r ".\"$UPLOAD_ONLY_ID\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
         APP_NAME=$(jq -r ".\"$UPLOAD_ONLY_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
         TYPE=$(jq -r ".\"$UPLOAD_ONLY_ID\".Project.Type // empty" "$PROJECT_FILE")
-        
-        CONFIG_FILE="${SCRIPT_DIR}/config.json"
-        GDRIVE_FOLDER_ID=""
-        if [ -f "$CONFIG_FILE" ]; then
-            GDRIVE_FOLDER_ID=$(jq -r ".types[\"$TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
-        fi
-        
-        ENV_FILE="${SCRIPT_DIR}/.env"
-        GDRIVE_CRED_PATH=""
-        if [ -f "$ENV_FILE" ]; then
-            RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
-            if [ -n "$RAW_CRED_PATH" ]; then
-                GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"
-            fi
-        fi
-        
-        if [ -z "$GDRIVE_FOLDER_ID" ] || [ -z "$GDRIVE_CRED_PATH" ]; then
-            echo "❌ Error: Konfigurasi Google Drive tidak lengkap di config.json atau .env."
-            exit 1
-        fi
-        
         TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}"
+
         if [ ! -d "$TARGET_DIR" ]; then
             echo "❌ Error: Folder $TARGET_DIR tidak ditemukan."
             exit 1
         fi
-        
-        LATEST_APK=$(find "$TARGET_DIR" -name "*.apk" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
-        
-        if [ -n "$LATEST_APK" ]; then
-            python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$LATEST_APK" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
+
+        if [ "$TESTFLIGHT_MODE" = true ]; then
+            echo "🍎 MENGUNGGAH KE TESTFLIGHT: $APP_NAME"
+            LATEST_IPA=$(find "$TARGET_DIR" -name "*.ipa" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+            
+            if [ -n "$LATEST_IPA" ]; then
+                # Get Prefix from config.json based on App Type
+                CONFIG_FILE="${SCRIPT_DIR}/config.json"
+                PREFIX=""
+                if command -v jq >/dev/null 2>&1 && [ -f "$CONFIG_FILE" ]; then
+                    PREFIX=$(jq -r ".types[\"$TYPE\"].prefix // empty" "$CONFIG_FILE")
+                fi
+                if [ -z "$PREFIX" ]; then
+                    PREFIX="com.example"
+                fi
+                APP_PACKAGE_NAME="${PREFIX}.${UPLOAD_ONLY_ID}"
+
+                ruby "${SCRIPT_DIR}/scripts/upload_to_testflight.rb" "$LATEST_IPA" "$APP_PACKAGE_NAME" "$APP_NAME" "$TYPE"
+            else
+                echo "⚠️ File IPA tidak ditemukan di $TARGET_DIR"
+                exit 1
+            fi
         else
-            echo "⚠️ File APK tidak ditemukan di $TARGET_DIR"
-            exit 1
+            CONFIG_FILE="${SCRIPT_DIR}/config.json"
+            GDRIVE_FOLDER_ID=""
+            if [ -f "$CONFIG_FILE" ]; then
+                GDRIVE_FOLDER_ID=$(jq -r ".types[\"$TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
+            fi
+            
+            ENV_FILE="${SCRIPT_DIR}/.env"
+            GDRIVE_CRED_PATH=""
+            if [ -f "$ENV_FILE" ]; then
+                RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
+                if [ -n "$RAW_CRED_PATH" ]; then
+                    GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"
+                fi
+            fi
+            
+            if [ -z "$GDRIVE_FOLDER_ID" ] || [ -z "$GDRIVE_CRED_PATH" ]; then
+                echo "❌ Error: Konfigurasi Google Drive tidak lengkap di config.json atau .env."
+                exit 1
+            fi
+            
+            LATEST_APK=$(find "$TARGET_DIR" -name "*.apk" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+            
+            if [ -n "$LATEST_APK" ]; then
+                python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$LATEST_APK" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
+            else
+                echo "⚠️ File APK tidak ditemukan di $TARGET_DIR"
+                exit 1
+            fi
         fi
         
         exit 0
