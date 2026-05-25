@@ -54,3 +54,7 @@ icon/*
 # Ignore files inside build_result but keep the folder
 build_result/*
 !build_result/.gitkeep
+
+# Ignore files inside credentials but keep the folder
+credentials/*
+!credentials/.gitkeep

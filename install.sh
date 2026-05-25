@@ -8,6 +8,13 @@ ZSHRC="$HOME/.zshrc"
 echo "Mempersiapkan release.sh agar bisa dijalankan..."
 chmod +x "$RELEASE_SCRIPT"
 
+echo "Menginstal pustaka Python yang dibutuhkan (Google API)..."
+if command -v pip3 >/dev/null 2>&1; then
+    pip3 install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+else
+    echo "⚠️ pip3 tidak ditemukan. Silakan instal Python3 terlebih dahulu."
+fi
+
 echo "Menambahkan alias ke ~/.zshrc..."
 # Cek apakah alias sudah ada untuk menghindari duplikasi
 if ! grep -q "alias release=" "$ZSHRC"; then

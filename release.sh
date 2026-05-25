@@ -10,10 +10,50 @@ DATABASE=""
 ICON=""
 NOTES=""
 RUN_ID=""
+UPLOAD_ONLY_ID=""
+UPLOAD_ONLY_MODE=false
+
+# Fungsi untuk menampilkan bantuan
+show_help() {
+    echo "============================================================"
+    echo "🚀 RELEASE HUB CLI"
+    echo "============================================================"
+    echo "Penggunaan: release [OPTIONS] [PROJECT_ID]"
+    echo ""
+    echo "Jika dipanggil tanpa parameter, akan memunculkan menu interaktif untuk memilih project."
+    echo ""
+    echo "Opsi:"
+    echo "  -h, --help            Menampilkan bantuan ini"
+    echo "  -u, --upload [ID]     Hanya mengunggah build terakhir (upload only) ke Google Drive. Bisa juga tanpa ID untuk memilih interaktif."
+    echo "  --project <nama>      Menentukan Nama Project baru"
+    echo "  --region <region>     Menentukan Region Project"
+    echo "  --app-name <nama>     Menentukan Nama Aplikasi"
+    echo "  --type <tipe>         Menentukan Tipe Aplikasi (contoh: 'HRM Apps')"
+    echo "  --base-url <url>      Menentukan Base URL API"
+    echo "  --database <db>       Menentukan Nama Database"
+    echo "  --icon <url>          URL Google Drive gambar untuk diconvert otomatis menjadi ikon aplikasi"
+    echo "  --notes <catatan>     Menambahkan catatan tambahan"
+    echo ""
+    echo "Contoh:"
+    echo "  release                         # Membuka menu pilihan project secara interaktif"
+    echo "  release smkgemanusantara        # Build project dengan ID 'smkgemanusantara'"
+    echo "  release -u                      # Pilih project interaktif lalu hanya upload APK tanpa build ulang"
+    echo "  release -u smkgemanusantara     # Upload APK dari 'smkgemanusantara' tanpa build ulang"
+    echo "  release --project 'PT Baru' --app-name 'Baru HRIS' --type 'HRM Apps' --base-url 'https://api.baru.com' --database 'baru_db'"
+    exit 0
+}
 
 # Looping untuk mem-parsing argumen
 while [[ "$#" -gt 0 ]]; do
     case $1 in
+        -h|--help) show_help ;;
+        -u|--upload) 
+            UPLOAD_ONLY_MODE=true
+            if [[ -n "$2" && "$2" != -* ]]; then
+                UPLOAD_ONLY_ID="$2"
+                shift
+            fi
+            ;;
         --project) PROJECT="$2"; shift ;;
         --region) REGION="$2"; shift ;;
         --app-name) APP_NAME="$2"; shift ;;
@@ -46,6 +86,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
 # Trap function untuk membersihkan temporary files dan memainkan suara ketika script berhenti
 on_exit() {
+    echo ""
     echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
     git checkout -- android/ ios/ >/dev/null 2>&1
     rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
@@ -57,6 +98,170 @@ on_exit() {
 trap on_exit EXIT
 
 PROJECT_FILE="${SCRIPT_DIR}/projects.json"
+
+
+if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ]; then
+    if [ -s "$PROJECT_FILE" ] && command -v jq >/dev/null 2>&1; then
+        local_input=""
+        local_char=""
+        
+        # Ekstrak data project HANYA SEKALI di luar loop untuk menghindari lag (debounce issue)
+        projects_data=$(jq -r 'to_entries | .[] | "\(.key)|\(.value.Project["Project Name"])"' "$PROJECT_FILE")
+        
+        tput civis
+        
+        while true; do
+            tput clear
+            
+            echo "============================================================"
+            echo "📋 DAFTAR PROJECT"
+            echo "============================================================"
+            
+            match_count=0
+            first_match=""
+            exact_match=""
+            no=1
+            
+            input_lower=$(echo "$local_input" | tr 'A-Z' 'a-z')
+            
+            while IFS="|" read -r pid pname; do
+                pid_lower=$(echo "$pid" | tr 'A-Z' 'a-z')
+                pname_lower=$(echo "$pname" | tr 'A-Z' 'a-z')
+                
+                if [[ -z "$input_lower" || "$no" == "$input_lower"* || "$pid_lower" == *"$input_lower"* || "$pname_lower" == *"$input_lower"* ]]; then
+                    printf "%-3s %-20s %s\n" "$no." "$pid" "$pname"
+                    if [ $match_count -eq 0 ]; then
+                        first_match="$pid"
+                    fi
+                    if [[ "$no" == "$input_lower" || "$pid_lower" == "$input_lower" ]]; then
+                        exact_match="$pid"
+                    fi
+                    ((match_count++))
+                fi
+                ((no++))
+            done <<< "$projects_data"
+            
+            echo "------------------------------------------------------------"
+            echo -n "Masukkan Project ID (Tab untuk auto-complete): $local_input"
+            
+            # Mulai baca input pertama (blocking)
+            IFS= read -r -s -n 1 local_char
+            
+            # Loop kecil untuk memproses input cepat / debounce
+            while true; do
+                if [[ -z "$local_char" ]]; then
+                    if [ -n "$exact_match" ]; then
+                        local_input="$exact_match"
+                    elif [ -n "$first_match" ]; then
+                        local_input="$first_match"
+                    fi
+                    echo
+                    break 2
+                elif [[ "$local_char" == $'\x09' ]]; then
+                    if [ -n "$exact_match" ]; then
+                        local_input="$exact_match"
+                    elif [ -n "$first_match" ]; then
+                        local_input="$first_match"
+                    fi
+                elif [[ "$local_char" == $'\x7f' || "$local_char" == $'\b' || "$local_char" == $'\177' ]]; then
+                    if [ ${#local_input} -gt 0 ]; then
+                        local_input="${local_input%?}"
+                    fi
+                elif [[ "$local_char" == $'\e' ]]; then
+                    # Deteksi sequence seperti Delete (\e[3~) atau Arrow Keys
+                    if IFS= read -r -s -n 2 -t 0.05 seq; then
+                        if [[ "$seq" == "[3" ]]; then
+                            IFS= read -r -s -n 1 -t 0.05 seq2
+                            if [[ "$seq2" == "~" ]] && [ ${#local_input} -gt 0 ]; then
+                                local_input="${local_input%?}"
+                            fi
+                        fi
+                    fi
+                else
+                    # Karakter biasa
+                    if [[ "$local_char" == [[:print:]] ]]; then
+                        local_input="${local_input}${local_char}"
+                    fi
+                fi
+                
+                # Debounce: Coba baca input selanjutnya. Jika tidak ada yang diketik dalam 0.3s, keluar loop dan render ulang
+                if ! IFS= read -r -s -n 1 -t 0.3 local_char; then
+                    break
+                fi
+            done
+        done
+        
+        tput cnorm
+        
+        if [ -n "$local_input" ]; then
+            if [ "$UPLOAD_ONLY_MODE" = true ]; then
+                UPLOAD_ONLY_ID="$local_input"
+            else
+                RUN_ID="$local_input"
+            fi
+        else
+            echo "❌ Batal memilih project."
+            exit 0
+        fi
+    fi
+fi
+
+if [ -n "$UPLOAD_ONLY_ID" ]; then
+    echo "============================================================"
+    echo "🚀 MENGUNGGAH FILE BUILD: $UPLOAD_ONLY_ID"
+    echo "============================================================"
+    
+    if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
+        if ! jq -e ".\"$UPLOAD_ONLY_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
+            echo "❌ Error: Project '$UPLOAD_ONLY_ID' tidak ditemukan di projects.json"
+            exit 1
+        fi
+        
+        PROJECT=$(jq -r ".\"$UPLOAD_ONLY_ID\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
+        APP_NAME=$(jq -r ".\"$UPLOAD_ONLY_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
+        TYPE=$(jq -r ".\"$UPLOAD_ONLY_ID\".Project.Type // empty" "$PROJECT_FILE")
+        
+        CONFIG_FILE="${SCRIPT_DIR}/config.json"
+        GDRIVE_FOLDER_ID=""
+        if [ -f "$CONFIG_FILE" ]; then
+            GDRIVE_FOLDER_ID=$(jq -r ".types[\"$TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
+        fi
+        
+        ENV_FILE="${SCRIPT_DIR}/.env"
+        GDRIVE_CRED_PATH=""
+        if [ -f "$ENV_FILE" ]; then
+            RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
+            if [ -n "$RAW_CRED_PATH" ]; then
+                GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"
+            fi
+        fi
+        
+        if [ -z "$GDRIVE_FOLDER_ID" ] || [ -z "$GDRIVE_CRED_PATH" ]; then
+            echo "❌ Error: Konfigurasi Google Drive tidak lengkap di config.json atau .env."
+            exit 1
+        fi
+        
+        TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}"
+        if [ ! -d "$TARGET_DIR" ]; then
+            echo "❌ Error: Folder $TARGET_DIR tidak ditemukan."
+            exit 1
+        fi
+        
+        LATEST_APK=$(find "$TARGET_DIR" -name "*.apk" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+        
+        if [ -n "$LATEST_APK" ]; then
+            python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$LATEST_APK" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
+        else
+            echo "⚠️ File APK tidak ditemukan di $TARGET_DIR"
+            exit 1
+        fi
+        
+        exit 0
+    else
+        echo "❌ Error: jq tidak ditemukan atau projects.json tidak valid."
+        exit 1
+    fi
+fi
 
 if [ -n "$RUN_ID" ]; then
     if command -v jq >/dev/null 2>&1 && jq -e ".\"$RUN_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then

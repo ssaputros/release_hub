@@ -24,9 +24,11 @@ if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
     BRANCH=$(jq -r ".\"$RUN_ID\".Branch // empty" "$PROJECT_FILE")
     
     APP_LOCATION=""
+    GDRIVE_FOLDER_ID=""
     if [ -f "$CONFIG_FILE" ]; then
         RAW_LOCATION=$(jq -r ".types[\"$TYPE\"].location // empty" "$CONFIG_FILE")
         APP_LOCATION=$(eval echo "$RAW_LOCATION")
+        GDRIVE_FOLDER_ID=$(jq -r ".types[\"$TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
     fi
 
     if [ -z "$APP_LOCATION" ] || [ ! -d "$APP_LOCATION" ]; then
@@ -70,6 +72,16 @@ mkdir -p "$TARGET_DIR"
 TIMESTAMP=$(date +"%d-%m-%Y %H.%M")
 VERSION=$(grep '^version: ' pubspec.yaml | head -n 1 | awk '{print $2}' | tr -d '\r')
 
+# Mengambil konfigurasi Google Drive dari .env
+ENV_FILE="${SCRIPT_DIR}/.env"
+GDRIVE_CRED_PATH=""
+if [ -f "$ENV_FILE" ]; then
+    RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
+    if [ -n "$RAW_CRED_PATH" ]; then
+        GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"
+    fi
+fi
+
 move_and_rename() {
     local source_path="$1"
     local extension="$2"
@@ -78,6 +90,10 @@ move_and_rename() {
         local new_name="${TIMESTAMP} ${APP_NAME} ${VERSION}.${extension}"
         cp "$source_path" "${TARGET_DIR}/${new_name}"
         echo "  ✅ Berhasil dipindahkan: $new_name"
+        
+        if [ -n "$GDRIVE_FOLDER_ID" ] && [ -n "$GDRIVE_CRED_PATH" ]; then
+            python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "${TARGET_DIR}/${new_name}" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
+        fi
     else
         echo "  ⚠️ File tidak ditemukan: $source_path"
     fi
