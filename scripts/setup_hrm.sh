@@ -227,4 +227,15 @@ else
     echo "  ℹ️  Tidak ada custom icon baru (menggunakan icon bawaan project)."
 fi
 
+# 9. Commit & Push Changes
+echo "  💾 Menyimpan konfigurasi branding ke repository..."
+git add .
+if git diff-index --quiet HEAD --; then
+    echo "  ℹ️ Tidak ada perubahan yang perlu di-commit."
+else
+    git commit -m "chore: auto-setup branding for $APP_NAME ($ID)" >/dev/null 2>&1
+    git push origin "$ID" >/dev/null 2>&1
+    echo "  ✅ Berhasil push konfigurasi ke branch '$ID'."
+fi
+
 echo "  ✅ Setup HRM selesai."
