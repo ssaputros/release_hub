@@ -1,0 +1,13 @@
+{
+  "name": "release-hub-automation",
+  "version": "1.0.0",
+  "description": "Playwright automation for Google Play Console",
+  "main": "auth.js",
+  "scripts": {
+    "auth": "node auth.js",
+    "record": "node record.js"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}

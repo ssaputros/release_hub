@@ -309,11 +309,17 @@ fi
                 echo "5) Upload Drive"
                 echo "6) Upload TestFlight"
                 echo "7) Submit TestFlight (Lewati Upload IPA)"
+                echo "8) Create Playstore App"
+                echo "9) Setup Playstore App Information"
+                echo "10) Setup Store Listing"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5): "
                 read -r action_choice
 
-                if [[ "$action_choice" == *1* ]]; then
+                # Ganti koma dengan spasi dan tambahkan spasi di awal/akhir agar pengecekan angka lebih aman (mencegah 10 terbaca sebagai 1)
+                clean_choice=" $(echo "$action_choice" | tr ',' ' ') "
+
+                if [[ "$clean_choice" == *" 1 "* ]]; then
                     OPT_SETUP=true
                     OPT_BUILD=true
                     export BUILD_TARGET_APK=true
@@ -321,14 +327,63 @@ fi
                     OPT_UPLOAD_DRIVE=true
                     OPT_UPLOAD_TESTFLIGHT=true
                 else
-                    if [[ "$action_choice" == *2* ]]; then OPT_SETUP=true; fi
-                    if [[ "$action_choice" == *3* ]]; then OPT_BUILD=true; export BUILD_TARGET_APK=true; fi
-                    if [[ "$action_choice" == *4* ]]; then OPT_BUILD=true; export BUILD_TARGET_IPA=true; fi
-                    if [[ "$action_choice" == *5* ]]; then OPT_UPLOAD_DRIVE=true; fi
-                    if [[ "$action_choice" == *6* ]]; then OPT_UPLOAD_TESTFLIGHT=true; fi
-                    if [[ "$action_choice" == *7* ]]; then 
+                    if [[ "$clean_choice" == *" 2 "* ]]; then OPT_SETUP=true; fi
+                    if [[ "$clean_choice" == *" 3 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_APK=true; fi
+                    if [[ "$clean_choice" == *" 4 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_IPA=true; fi
+                    if [[ "$clean_choice" == *" 5 "* ]]; then OPT_UPLOAD_DRIVE=true; fi
+                    if [[ "$clean_choice" == *" 6 "* ]]; then OPT_UPLOAD_TESTFLIGHT=true; fi
+                    if [[ "$clean_choice" == *" 7 "* ]]; then 
                         OPT_UPLOAD_TESTFLIGHT=true
                         export SKIP_UPLOAD=true
+                    fi
+
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]]; then
+                        echo "============================================================"
+                        echo "🤖 MENYIAPKAN AUTOMASI GOOGLE PLAY CONSOLE"
+                        echo "============================================================"
+                        cd "${SCRIPT_DIR}/automation" || exit 1
+                        
+                        if [ ! -d "node_modules" ]; then
+                            echo "📦 Menginstal dependensi automation (Playwright)..."
+                            npm install
+                            npx playwright install chromium
+                        fi
+                        
+                        if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
+                            echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."
+                            npm run auth
+                        fi
+                        
+                        if [[ "$clean_choice" == *" 8 "* ]]; then
+                            if ! node create_app.js "$TARGET_ID"; then
+                                echo -n "❌ Skrip gagal dijalankan. Apakah Anda ingin membuka perekam UI (Playwright Inspector) untuk memperbarui skrip? (y/n): "
+                                read -r record_choice
+                                if [[ "$record_choice" == "y" || "$record_choice" == "Y" ]]; then
+                                    npm run record
+                                fi
+                            fi
+                        fi
+                        
+                        if [[ "$clean_choice" == *" 9 "* ]]; then
+                            if ! node runner_app_info.js "$TARGET_ID"; then
+                                echo -n "❌ Skrip gagal dijalankan. Apakah Anda ingin membuka perekam UI (Playwright Inspector) untuk memperbarui skrip? (y/n): "
+                                read -r record_choice
+                                if [[ "$record_choice" == "y" || "$record_choice" == "Y" ]]; then
+                                    npm run record
+                                fi
+                            fi
+                        fi
+
+                        if [[ "$clean_choice" == *" 10 "* ]]; then
+                            if ! node runner_store_listing.js "$TARGET_ID"; then
+                                echo -n "❌ Skrip gagal dijalankan. Apakah Anda ingin membuka perekam UI (Playwright Inspector) untuk memperbarui skrip? (y/n): "
+                                read -r record_choice
+                                if [[ "$record_choice" == "y" || "$record_choice" == "Y" ]]; then
+                                    npm run record
+                                fi
+                            fi
+                        fi
+                        exit 0
                     fi
                 fi
                 
