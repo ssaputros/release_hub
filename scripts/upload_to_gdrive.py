@@ -130,16 +130,23 @@ def upload_file(file_path, parent_folder_id, credentials_path, project_name, app
         }
 
         # MediaFileUpload otomatis mengenali tipe MIME
-        media = MediaFileUpload(file_path, resumable=True)
+        media = MediaFileUpload(file_path, resumable=True, chunksize=1024*1024)
 
         # Proses unggah
-        file = service.files().create(
+        request = service.files().create(
             body=file_metadata,
             media_body=media,
             fields='id, webViewLink'
-        ).execute()
+        )
+        
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"⏳ Progress: {int(status.progress() * 100)}%", end='\r', flush=True)
 
-        print(f"✅ Berhasil mengunggah: {file_name}")
+        file = response
+        print(f"\n✅ Berhasil mengunggah: {file_name}")
         print(f"🔗 Link: {file.get('webViewLink')}")
         
     except Exception as e:

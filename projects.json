@@ -37,5 +37,18 @@
       "Icon": "https://drive.google.com/open?id=1ULVT9zlU-iXUpN2GHFyarq00qYYguu08",
       "Notes": ""
     }
+  },
+  "progressbicyclecorporation": {
+    "Branch": "progressbicyclecorporation",
+    "Project": {
+      "Project Name": "Progress Bicycle Corporation",
+      "Region": "Philippines",
+      "App Name": "PBC HRIS",
+      "Type": "HRM Apps",
+      "Base URL": "https://progressbicycle.hash-029.com",
+      "Database": "pbc-260511",
+      "Icon": "https://drive.google.com/open?id=1e3TVtGRMn5Oepe88NzcW0H3NC81BlqqU",
+      "Notes": ""
+    }
   }
 }

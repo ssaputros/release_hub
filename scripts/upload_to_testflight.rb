@@ -110,8 +110,28 @@ begin
   if ENV['SKIP_UPLOAD'] == 'true'
     puts "⏭️ Melewati proses upload IPA karena SKIP_UPLOAD=true..."
   else
-    Pilot::BuildManager.new.upload(config)
-    puts "✅ Upload IPA selesai!"
+    upload_thread = Thread.new do
+      Pilot::BuildManager.new.upload(config)
+    end
+    
+    # Tunggu sebentar agar log awal Fastlane tercetak, lalu beri baris baru
+    sleep 2
+    puts "" 
+    
+    spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+    i = 0
+    start_time = Time.now
+    while upload_thread.alive?
+      elapsed = (Time.now - start_time).to_i
+      mins = elapsed / 60
+      secs = elapsed % 60
+      print "\r⏳ #{spinner[i % spinner.length]} Mengunggah IPA ke Apple Server... (Waktu berlalu: #{mins}m #{secs}s)   "
+      i += 1
+      sleep 0.2
+    end
+    
+    upload_thread.join
+    puts "\n✅ Upload IPA selesai!"
   end
   
   # Menyiapkan External Group
@@ -128,7 +148,12 @@ begin
   end
   
   puts "🔍 Mengecek status Build terbaru..."
-  build = app.get_builds(includes: "preReleaseVersion,buildBetaDetail", sort: "-uploadedDate", limit: 1).first
+  build = app.get_builds(
+    filter: { processingState: "PROCESSING,FAILED,VALID,INVALID" },
+    includes: "preReleaseVersion,buildBetaDetail", 
+    sort: "-uploadedDate", 
+    limit: 1
+  ).first
   
   if build.nil?
     puts "⚠️ Belum ada build yang ditemukan untuk aplikasi ini."
@@ -139,8 +164,7 @@ begin
     if !build.processed?
       puts "⚠️ Build terbaru masih berstatus '#{build.processing_state}' (sedang diproses Apple)."
       puts "❌ Build belum bisa disubmit ke TestFlight External."
-      puts "💡 Silakan tunggu 5-15 menit, lalu jalankan ulang dengan: SKIP_UPLOAD=true release -t"
-      exit 0
+      exit 2
     else
       puts "📦 Menambahkan build #{build.version} ke grup '#{group_name}'..."
       # Menyatakan bebas enkripsi (Export Compliance) jika diminta Apple

@@ -53,14 +53,23 @@ if [ -n "$BRANCH" ]; then
     git pull origin "$BRANCH" >/dev/null 2>&1
 fi
 
-echo "  > Build APK..."
-if ! fvm flutter build apk; then echo "❌ Gagal build APK"; exit 1; fi
+if [ -z "$BUILD_TARGET_APK" ] && [ -z "$BUILD_TARGET_IPA" ]; then
+    BUILD_TARGET_APK=true
+    BUILD_TARGET_IPA=true
+fi
 
-echo "  > Build IPA..."
-if ! fvm flutter build ipa; then echo "❌ Gagal build IPA"; exit 1; fi
+if [ "$BUILD_TARGET_APK" = true ]; then
+    echo "  > Build APK..."
+    if ! fvm flutter build apk; then echo "❌ Gagal build APK"; exit 1; fi
 
-echo "  > Build App Bundle (AAB)..."
-if ! fvm flutter build appbundle; then echo "❌ Gagal build AAB"; exit 1; fi
+    echo "  > Build App Bundle (AAB)..."
+    if ! fvm flutter build appbundle; then echo "❌ Gagal build AAB"; exit 1; fi
+fi
+
+if [ "$BUILD_TARGET_IPA" = true ]; then
+    echo "  > Build IPA..."
+    if ! fvm flutter build ipa; then echo "❌ Gagal build IPA"; exit 1; fi
+fi
 
 echo "============================================================"
 echo "📦 RENAME & MOVE BUILD"
@@ -91,7 +100,7 @@ move_and_rename() {
         cp "$source_path" "${TARGET_DIR}/${new_name}"
         echo "  ✅ Berhasil dipindahkan: $new_name"
         
-        if [ -n "$GDRIVE_FOLDER_ID" ] && [ -n "$GDRIVE_CRED_PATH" ]; then
+        if [ "$SKIP_UPLOAD" != "true" ] && [ -n "$GDRIVE_FOLDER_ID" ] && [ -n "$GDRIVE_CRED_PATH" ]; then
             python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "${TARGET_DIR}/${new_name}" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
         fi
     else
