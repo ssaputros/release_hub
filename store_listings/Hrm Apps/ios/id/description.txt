@@ -1,0 +1,1 @@
+This app is a human resource application that is used by internal company.

@@ -111,7 +111,16 @@ package_name = "#{prefix}.#{run_id}"
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
-metadata_root = File.join(project_root, "store_listings", folder_type, run_id, "metadata")
+
+# Ask user for custom folder name
+puts "\n============================================================"
+puts "📂 TENTUKAN FOLDER SUMBER"
+puts "============================================================"
+print "Masukkan nama folder penyimpanan (Default: #{folder_type}): "
+input_folder = $stdin.gets.chomp.strip
+target_folder = input_folder.empty? ? folder_type : input_folder
+
+metadata_root = File.join(project_root, "store_listings", target_folder)
 
 puts "\n============================================================"
 puts "ℹ️ INFORMASI TARGET UPDATE STORE LISTING"

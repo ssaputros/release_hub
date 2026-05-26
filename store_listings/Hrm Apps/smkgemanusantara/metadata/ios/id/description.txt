@@ -1,2 +1,0 @@
-My STI is a human resource application that is used by internal company in managing human resources which includes employee administration data, employee attendance data, employee overtime data, employee leave data, reimbursement, payroll and others.
-

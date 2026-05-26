@@ -115,7 +115,16 @@ bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
-metadata_root = File.join(project_root, "store_listings", folder_type, run_id, "metadata")
+
+# Ask user for custom folder name
+puts "\n============================================================"
+puts "📂 TENTUKAN FOLDER TUJUAN"
+puts "============================================================"
+print "Masukkan nama folder penyimpanan (Default: #{folder_type}): "
+input_folder = $stdin.gets.chomp.strip
+target_folder = input_folder.empty? ? folder_type : input_folder
+
+metadata_root = File.join(project_root, "store_listings", target_folder)
 metadata_ios_path = File.join(metadata_root, "ios")
 
 # Ensure metadata directory exists

@@ -123,7 +123,16 @@ package_name = input_package_name.empty? ? default_package_name : input_package_
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
-metadata_root = File.join(project_root, "store_listings", folder_type, run_id, "metadata")
+
+# Ask user for custom folder name
+puts "\n============================================================"
+puts "📂 TENTUKAN FOLDER TUJUAN"
+puts "============================================================"
+print "Masukkan nama folder penyimpanan (Default: #{folder_type}): "
+input_folder = $stdin.gets.chomp.strip
+target_folder = input_folder.empty? ? folder_type : input_folder
+
+metadata_root = File.join(project_root, "store_listings", target_folder)
 metadata_android_path = File.join(metadata_root, "android")
 
 # Clean existing directory to prevent Supply setup from skipping download
