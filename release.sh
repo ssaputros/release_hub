@@ -359,6 +359,9 @@ fi
                 echo "11) Record Playwright UI"
                 echo "12) Update Play Console Dashboard ID"
                 echo "13) Bump Version"
+                echo "14) Push Playstore Listing"
+                echo "15) Download App Store Metadata"
+                echo "16) Push App Store Metadata"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
                 read -r action_choice
@@ -384,21 +387,24 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]]; then
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]]; then
                         echo "============================================================"
-                        echo "🤖 MENYIAPKAN AUTOMASI GOOGLE PLAY CONSOLE"
+                        echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
                         echo "============================================================"
-                        cd "${SCRIPT_DIR}/automation" || exit 1
                         
-                        if [ ! -d "node_modules" ]; then
-                            echo "📦 Menginstal dependensi automation (Playwright)..."
-                            npm install
-                            npx playwright install chromium
-                        fi
-                        
-                        if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
-                            echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."
-                            npm run auth
+                        # Hanya install dan masuk ke folder automation jika memilih opsi Playwright
+                        if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]]; then
+                            cd "${SCRIPT_DIR}/automation" || exit 1
+                            if [ ! -d "node_modules" ]; then
+                                echo "📦 Menginstal dependensi automation (Playwright)..."
+                                npm install
+                                npx playwright install chromium
+                            fi
+                            
+                            if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
+                                echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."
+                                npm run auth
+                            fi
                         fi
                         
                         if [[ "$clean_choice" == *" 12 "* ]]; then
@@ -442,8 +448,23 @@ fi
                             npm run record
                         fi
                         
+                        # Kembali ke direktori utama
+                        cd "${SCRIPT_DIR}" || exit 1
+                        
                         if [[ "$clean_choice" == *" 13 "* ]]; then
                             ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" || echo "❌ bump_version.rb gagal dijalankan."
+                        fi
+
+                        if [[ "$clean_choice" == *" 14 "* ]]; then
+                            ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ update_store_listing.rb gagal dijalankan."
+                        fi
+
+                        if [[ "$clean_choice" == *" 15 "* ]]; then
+                            ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ download_appstore_metadata.rb gagal dijalankan."
+                        fi
+
+                        if [[ "$clean_choice" == *" 16 "* ]]; then
+                            ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
                         fi
                         exit 0
                     fi
