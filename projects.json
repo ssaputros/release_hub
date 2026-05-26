@@ -50,5 +50,44 @@
       "Icon": "https://drive.google.com/open?id=1e3TVtGRMn5Oepe88NzcW0H3NC81BlqqU",
       "Notes": ""
     }
+  },
+  "bumiaki": {
+    "Branch": "bumiaki",
+    "Project": {
+      "Project Name": "Bumi Aki Group",
+      "Region": "Indonesia",
+      "App Name": "Bumi Aki HRIS",
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://bumiakigroup.hashmicro.co",
+      "Database": "bumiakigroupdb",
+      "Icon": "https://drive.google.com/open?id=183azNCjOUOwJqh36Q7hBn-93AQ-V5ltj",
+      "Notes": ""
+    }
+  },
+  "mitraswalayan": {
+    "Branch": "mitraswalayan",
+    "Project": {
+      "Project Name": "Mitra Swalayan",
+      "Region": "Indonesia",
+      "App Name": "Mitra Swalayan - HRIS",
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://mitra-swalayan.hash-009.com",
+      "Database": "mitra-training",
+      "Icon": "https://drive.google.com/open?id=1JeHwUYus7CdGFopZQLfagVjw5rAX1q-y",
+      "Notes": ""
+    }
+  },
+  "bft": {
+    "Branch": "bft",
+    "Project": {
+      "Project Name": "PT. Borneo Famili Transportama",
+      "Region": "Indonesia",
+      "App Name": "HRM BFT",
+      "Type": "HRM Apps",
+      "Base URL": "https://borneo-famili.hash-009.com",
+      "Database": "borneoscore22",
+      "Icon": "https://drive.google.com/open?id=1HGwyH6CZ-xMHxJPtTDghYEd1mPiptYQr",
+      "Notes": ""
+    }
   }
 }

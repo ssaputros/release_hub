@@ -26,18 +26,14 @@ if (!appData) {
   process.exit(1);
 }
 
-const appName = appData.Project['App Name'];
-const appType = appData.Project['Type'];
+const rawAppName = appData.Project['App Name'];
+const rawAppType = process.env.FILTERED_TYPE || appData.Project['Type'];
 
-// Menghitung Package Name (Prefix + ID)
-let prefix = "com.example";
-if (fs.existsSync(configPath)) {
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  if (config.types && config.types[appType] && config.types[appType].prefix) {
-    prefix = config.types[appType].prefix;
-  }
-}
-const packageName = `${prefix}.${runId}`;
+const { getAppMeta } = require('../scripts/app_meta.js');
+const meta = getAppMeta(runId, rawAppName, rawAppType, configPath);
+
+const appName = meta.appName;
+const packageName = meta.packageName;
 
 (async () => {
   const credentialsDir = path.join(__dirname, '../credentials');

@@ -10,6 +10,16 @@
                 "password": "Hash82821Micro#",
                 "app_description": "This app is a human resource application that is used by internal company in managing human resources which includes employee administration data, employee attendance data, employee overtime data, employee leave data, reimbursement, payroll and others."
             }
+        },
+        "Approval Apps": {
+            "prefix": "com.hashmicro.approval",
+            "location": "~/Projects/HashMicro/ApprovalApp",
+            "gdrive_folder_id": "1RrDc3YD03u5fixp1rs1qRb9FZi_8XhDa",
+            "beta_app_review_info": {
+                "username": "admin",
+                "password": "Hash82821Micro#",
+                "app_description": "This app is a human resource application that is used by internal company in managing human resources which includes employee administration data, employee attendance data, employee overtime data, employee leave data, reimbursement, payroll and others."
+            }
         }
     }
 }

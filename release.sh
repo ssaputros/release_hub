@@ -299,6 +299,50 @@ fi
             else
                 TARGET_ID="$local_input"
                 tput clear
+                
+                # Cek apakah project memiliki lebih dari satu Type (Tanyakan sebelum pilih aksi)
+                if command -v jq >/dev/null 2>&1 && jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
+                    INTERACTIVE_TYPE=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+                    if [[ "$INTERACTIVE_TYPE" == *","* ]]; then
+                        IFS=',' read -ra ALL_TYPES <<< "$INTERACTIVE_TYPE"
+                        echo "============================================================"
+                        echo "🗂️ PROJECT INI MEMILIKI BEBERAPA TIPE APLIKASI"
+                        echo "============================================================"
+                        echo "1) Full (Semua Tipe: $INTERACTIVE_TYPE)"
+                        
+                        idx=2
+                        for t in "${ALL_TYPES[@]}"; do
+                            t_clean=$(echo "$t" | xargs)
+                            echo "$idx) $t_clean"
+                            ((idx++))
+                        done
+                        echo "------------------------------------------------------------"
+                        echo -n "Pilih tipe yang ingin dieksekusi (bisa lebih dari satu, pisahkan spasi, misal: 2 3): "
+                        read -r type_choice
+
+                        if [[ "$type_choice" != "1" && -n "$type_choice" ]]; then
+                            NEW_TYPE=""
+                            choices=$(echo "$type_choice" | tr ',' ' ' | xargs)
+                            for c in $choices; do
+                                if [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge 2 ] && [ "$c" -lt "$idx" ]; then
+                                    selected_idx=$((c - 2))
+                                    t_clean=$(echo "${ALL_TYPES[$selected_idx]}" | xargs)
+                                    if [ -n "$NEW_TYPE" ]; then
+                                        NEW_TYPE="${NEW_TYPE}, ${t_clean}"
+                                    else
+                                        NEW_TYPE="${t_clean}"
+                                    fi
+                                fi
+                            done
+                            
+                            if [ -n "$NEW_TYPE" ]; then
+                                export FILTERED_TYPE="$NEW_TYPE"
+                            fi
+                        fi
+                        tput clear
+                    fi
+                fi
+
                 echo "============================================================"
                 echo "🛠️ PILIH AKSI UNTUK: $local_input"
                 echo "============================================================"
@@ -406,6 +450,9 @@ if [ -n "$TARGET_ID" ]; then
         REGION=$(jq -r ".\"$TARGET_ID\".Project.Region // empty" "$PROJECT_FILE")
         APP_NAME=$(jq -r ".\"$TARGET_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
         TYPE=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+        if [ -n "$FILTERED_TYPE" ]; then
+            TYPE="$FILTERED_TYPE"
+        fi
         BASE_URL=$(jq -r ".\"$TARGET_ID\".Project.\"Base URL\" // empty" "$PROJECT_FILE")
         DATABASE=$(jq -r ".\"$TARGET_ID\".Project.Database // empty" "$PROJECT_FILE")
         ICON=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
@@ -490,16 +537,18 @@ else
 fi
 echo ""
 
-# Get Prefix from config.json based on App Type
+# Jika tidak ada opsi eksekusi yang aktif (hanya menambahkan project), maka keluar dengan bersih
+if [ "$OPT_SETUP" != true ] && [ "$OPT_BUILD" != true ] && [ "$OPT_UPLOAD_DRIVE" != true ] && [ "$OPT_UPLOAD_TESTFLIGHT" != true ] && [ "$UPLOAD_ONLY_MODE" != true ] && [ "$BUILD_ONLY_MODE" != true ]; then
+    trap - EXIT
+    exit 0
+fi
+
+# Gunakan script general (app_meta.js) untuk memproses Package Name dan App Name
 CONFIG_FILE="${SCRIPT_DIR}/config.json"
-PREFIX=""
-if command -v jq >/dev/null 2>&1 && [ -f "$CONFIG_FILE" ]; then
-    PREFIX=$(jq -r ".types[\"$TYPE\"].prefix // empty" "$CONFIG_FILE")
-fi
-if [ -z "$PREFIX" ]; then
-    PREFIX="com.example"
-fi
-APP_PACKAGE_NAME="${PREFIX}.${ID}"
+META_JSON=$(node "${SCRIPT_DIR}/scripts/app_meta.js" "$ID" "$APP_NAME" "$TYPE" "$CONFIG_FILE")
+APP_PACKAGE_NAME=$(echo "$META_JSON" | jq -r '.packageName')
+APP_NAME=$(echo "$META_JSON" | jq -r '.appName')
+PRIMARY_TYPE=$(echo "$META_JSON" | jq -r '.primaryType')
 
 
 # STAGE 1: SETUP
@@ -517,11 +566,22 @@ if [ "$OPT_SETUP" = true ]; then
     echo "============================================================"
     bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
 
-    if [ "$TYPE" == "HRM Apps" ]; then
-        echo "============================================================"
-        bash "${SCRIPT_DIR}/scripts/setup_hrm.sh" "$ID" "$REGION" "$APP_NAME" "$TYPE" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup HRM gagal!"; exit 1; }
-        echo "============================================================"
-    fi
+    # Eksekusi script setup dinamis berdasarkan Type
+    IFS=',' read -ra ADDR <<< "$TYPE"
+    for type_item in "${ADDR[@]}"; do
+        type_clean=$(echo "$type_item" | xargs)
+        type_slug=$(echo "$type_clean" | tr 'A-Z' 'a-z' | tr ' ' '_')
+        
+        script_file="${SCRIPT_DIR}/scripts/project_types/setup_${type_slug}.sh"
+        
+        if [ -f "$script_file" ]; then
+            echo "============================================================"
+            echo "⚙️ SETUP PROJECT: $type_clean"
+            echo "============================================================"
+            bash "$script_file" "$ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
+            echo "============================================================"
+        fi
+    done
 
     if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
         bash "${SCRIPT_DIR}/init_appstore.sh" "$ID" || { echo "❌ Proses init appstore gagal!"; exit 1; }
@@ -553,7 +613,7 @@ if [ "$OPT_UPLOAD_DRIVE" = true ]; then
     
     GDRIVE_FOLDER_ID=""
     if [ -f "$CONFIG_FILE" ]; then
-        GDRIVE_FOLDER_ID=$(jq -r ".types[\"$TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
+        GDRIVE_FOLDER_ID=$(jq -r ".types[\"$PRIMARY_TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
     fi
     
     ENV_FILE="${SCRIPT_DIR}/.env"
