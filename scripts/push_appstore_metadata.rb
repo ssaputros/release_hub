@@ -115,22 +115,14 @@ bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
-
-# Ask user for custom folder name
-puts "\n============================================================"
-puts "📂 TENTUKAN FOLDER SUMBER"
-puts "============================================================"
-print "Masukkan nama folder penyimpanan (Default: #{folder_type}): "
-input_folder = $stdin.gets.chomp.strip
-target_folder = input_folder.empty? ? folder_type : input_folder
-
-metadata_root = File.join(project_root, "store_listings", target_folder)
+metadata_root = File.join(project_root, "store_listings", folder_type)
 metadata_ios_path = File.join(metadata_root, "ios")
 
 # Validate metadata path exists
 unless File.directory?(metadata_ios_path)
-  puts "❌ Error: Direktori metadata iOS tidak ditemukan di '#{metadata_ios_path}'"
-  puts "   Silakan download metadata terlebih dahulu menggunakan opsi Download App Store Metadata."
+  puts "❌ Error: Template untuk tipe '#{app_type}' tidak ditemukan di 'store_listings/'."
+  puts "   Jalur dicari: #{metadata_ios_path}"
+  puts "   Silakan download template terlebih dahulu menggunakan menu Download App Store Metadata."
   exit 1
 end
 
@@ -166,7 +158,28 @@ if using_api_key
   end
 end
 
-# 5. Interactive Confirmation
+# 5. Apply project custom values dynamically
+puts "⚙️ Menyelaraskan informasi proyek (Name & Keywords) ke dalam template..."
+app_name = app_data['Project']['App Name'] || "My App"
+existing_locales = Dir.glob(File.join(metadata_ios_path, "*")).select { |f| File.directory?(f) }.map { |f| File.basename(f) }
+locales_to_update = existing_locales.empty? ? ["en-US", "id"] : existing_locales
+
+locales_to_update.each do |locale|
+  locale_path = File.join(metadata_ios_path, locale)
+  FileUtils.mkdir_p(locale_path) unless File.directory?(locale_path)
+  
+  # 1. Update Name dengan App Name proyek
+  name_file = File.join(locale_path, "name.txt")
+  File.write(name_file, app_name)
+  puts "   📝 Name [#{locale}] diselaraskan -> '#{app_name}'"
+
+  # 2. Update Keywords dengan App Name proyek
+  keywords_file = File.join(locale_path, "keywords.txt")
+  File.write(keywords_file, app_name)
+  puts "   📝 Keywords [#{locale}] diselaraskan -> '#{app_name}'"
+end
+
+# 6. Interactive Confirmation
 print "\nApakah Anda yakin ingin mengunggah metadata ini ke App Store Connect? (y/n): "
 confirm = $stdin.gets.chomp.strip.downcase
 unless confirm == 'y' || confirm == 'yes'

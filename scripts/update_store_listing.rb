@@ -111,16 +111,16 @@ package_name = "#{prefix}.#{run_id}"
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+metadata_root = File.join(project_root, "store_listings", folder_type)
+metadata_android_path = File.join(metadata_root, "android")
 
-# Ask user for custom folder name
-puts "\n============================================================"
-puts "📂 TENTUKAN FOLDER SUMBER"
-puts "============================================================"
-print "Masukkan nama folder penyimpanan (Default: #{folder_type}): "
-input_folder = $stdin.gets.chomp.strip
-target_folder = input_folder.empty? ? folder_type : input_folder
-
-metadata_root = File.join(project_root, "store_listings", target_folder)
+# Validate metadata path exists
+unless File.directory?(metadata_android_path)
+  puts "❌ Error: Template untuk tipe '#{app_type}' tidak ditemukan di 'store_listings/'."
+  puts "   Jalur dicari: #{metadata_android_path}"
+  puts "   Silakan download template terlebih dahulu menggunakan menu Download Play Store Metadata."
+  exit 1
+end
 
 puts "\n============================================================"
 puts "ℹ️ INFORMASI TARGET UPDATE STORE LISTING"
@@ -132,63 +132,37 @@ puts "Package Name   : #{package_name}"
 puts "Metadata Path  : #{metadata_root}"
 puts "============================================================\n"
 
-# 4. Check & Generate Auto-Template
-metadata_android_path = File.join(metadata_root, "android")
+# 4. Define locales
 locales = ["en-US", "id"] # Default locales
 
-template_needed = false
-unless File.directory?(metadata_android_path)
-  puts "⚠️ Direktori metadata belum ada. Membuat folder struktur dan template otomatis..."
-  template_needed = true
-end
+# 5. Apply project custom values dynamically
+puts "⚙️ Menyelaraskan informasi proyek (Title & Icon) ke dalam template..."
+app_name = app_data['Project']['App Name'] || "My App"
+project_icon_path = File.join(project_root, "icon", "icon.png")
 
 locales.each do |locale|
   locale_path = File.join(metadata_android_path, locale)
-  unless File.directory?(locale_path)
-    FileUtils.mkdir_p(locale_path)
-    template_needed = true
-  end
+  FileUtils.mkdir_p(locale_path) unless File.directory?(locale_path)
   
-  # Text files template
-  {
-    "title.txt" => app_data['Project']['App Name'] || "My App",
-    "short_description.txt" => "A wonderful application from #{app_data['Project']['Project Name']}.",
-    "full_description.txt" => "This application is developed for #{app_data['Project']['Project Name']} to manage internal resources, administration, and services seamlessly."
-  }.each do |file_name, content|
-    file_path = File.join(locale_path, file_name)
-    unless File.exist?(file_path)
-      File.write(file_path, content)
-      puts "📝 Terbuat: #{file_path}"
-    end
-  end
-  
-  # Image directories template
-  images_path = File.join(locale_path, "images")
-  FileUtils.mkdir_p(images_path) unless File.directory?(images_path)
-  
-  # Placeholder/Notes for images
-  %w[phoneScreenshots sevenInchScreenshots tenInchScreenshots].each do |screenshot_dir|
-    dir_path = File.join(images_path, screenshot_dir)
-    FileUtils.mkdir_p(dir_path) unless File.directory?(dir_path)
+  # 1. Update Title dengan App Name proyek
+  title_file = File.join(locale_path, "title.txt")
+  File.write(title_file, app_name)
+  puts "   📝 Title [#{locale}] diselaraskan -> '#{app_name}'"
+
+  # 2. Update Icon jika ada di project
+  if File.exist?(project_icon_path)
+    images_path = File.join(locale_path, "images")
+    FileUtils.mkdir_p(images_path) unless File.directory?(images_path)
+    dest_icon = File.join(images_path, "icon.png")
+    FileUtils.cp(project_icon_path, dest_icon)
+    puts "   🖼️  Icon [#{locale}] diselaraskan menggunakan icon project"
+  else
+    puts "   ℹ️  Icon project tidak ditemukan. Menggunakan icon bawaan template."
   end
 end
 
-if template_needed
-  puts "\n🎉 Folder struktur dan file template berhasil dibuat!"
-  puts "👉 Silakan isi dan sesuaikan deskripsi aplikasi Anda di:"
-  locales.each do |locale|
-    puts "   - #{File.join(metadata_android_path, locale)}"
-  end
-  puts "👉 Dan taruh gambar pendukung (jika ada) di:"
-  locales.each do |locale|
-    puts "   - #{File.join(metadata_android_path, locale, 'images')}"
-  end
-  puts "\nSetelah selesai melengkapi metadata di atas, silakan jalankan skrip ini kembali untuk mengupload."
-  exit 0
-end
-
-# 5. Validation
-puts "🔍 Melakukan validasi metadata sebelum mengunggah..."
+# 6. Validation
+puts "\n🔍 Melakukan validasi metadata sebelum mengunggah..."
 validation_failed = false
 
 locales.each do |locale|

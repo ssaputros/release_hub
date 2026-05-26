@@ -58,13 +58,7 @@ def run_qa_test():
         print(f"\n[QA] Mengirim ID: {args.id}")
         child.sendline(args.id)
         
-        # Step 3.5: Tunggu prompt nama folder penyimpanan
-        print("\n[QA] Menunggu prompt nama folder penyimpanan...")
-        child.expect("Masukkan nama folder penyimpanan", timeout=15)
-        
-        # Kirim enter untuk menggunakan folder default
-        print("\n[QA] Mengirim enter untuk folder default...")
-        child.sendline("")
+
         
         # Step 4: Tunggu proses download selesai
         print("\n[QA] Menunggu proses download metadata selesai...")
