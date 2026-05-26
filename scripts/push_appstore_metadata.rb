@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'dotenv/load'
+ENV['FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS'] = '1'
 require 'json'
 require 'fileutils'
 require 'fastlane'
@@ -25,6 +26,7 @@ projects = JSON.parse(File.read(projects_path))
 # 3. Handle arguments or interactive selection
 run_id = ARGV[0]
 app_type = ARGV[1]
+bundle_id_arg = ARGV[2]
 
 if run_id.nil? || run_id.empty?
   puts "============================================================"
@@ -111,10 +113,20 @@ default_bundle_id = "#{prefix}.#{run_id}"
 puts "\n============================================================"
 puts "🔑 INPUT BUNDLE ID"
 puts "============================================================"
-print "Masukkan Bundle ID Aplikasi (Default: #{default_bundle_id}): "
-input_bundle_id_raw = $stdin.gets
-input_bundle_id = input_bundle_id_raw ? input_bundle_id_raw.chomp.strip : ""
-bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
+if bundle_id_arg && !bundle_id_arg.empty?
+  bundle_id = bundle_id_arg
+  puts "Menggunakan Bundle ID dari argumen: #{bundle_id}"
+else
+  print "Masukkan Bundle ID Aplikasi (Default: #{default_bundle_id}): "
+  if !$stdin.tty?
+    puts "\nNon-interactive shell dideteksi. Menggunakan default: #{default_bundle_id}"
+    input_bundle_id = ""
+  else
+    input_bundle_id_raw = $stdin.gets
+    input_bundle_id = input_bundle_id_raw ? input_bundle_id_raw.chomp.strip : ""
+  end
+  bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
+end
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
@@ -140,7 +152,7 @@ puts "📂 Menyalin template ke folder temporary: #{temp_metadata_dir}"
 FileUtils.cp_r(File.join(template_ios_path, "."), temp_metadata_dir)
 
 puts "\n============================================================"
-puts "ℹ️ TARGET PUSH APP STORE METADATA"
+puts "ℹ️ TARGET PUSH APP STORE METADATA & SCREENSHOT"
 puts "============================================================"
 puts "Project ID     : #{run_id}"
 puts "Project Name   : #{app_data['Project']['Project Name']}"
@@ -212,6 +224,26 @@ if app_type == "Approval Apps"
   app_name = app_name.gsub(/\s+/, ' ')
   app_name = "#{app_name} Approval".strip unless app_name.downcase.include?('approval')
 end
+
+# Force metadata and screenshots to English (en-US) only
+puts "🌍 Memaksa bahasa metadata ke English (en-US)..."
+id_metadata_path = File.join(temp_metadata_dir, "id")
+en_metadata_path = File.join(temp_metadata_dir, "en-US")
+FileUtils.mv(id_metadata_path, en_metadata_path) if File.directory?(id_metadata_path)
+
+id_screenshots_path = File.join(temp_metadata_dir, "screenshots", "id")
+en_screenshots_path = File.join(temp_metadata_dir, "screenshots", "en-US")
+FileUtils.mv(id_screenshots_path, en_screenshots_path) if File.directory?(id_screenshots_path)
+
+# Hapus locale lain selain en-US agar Fastlane hanya mengunggah en-US
+Dir.glob(File.join(temp_metadata_dir, "*")).each do |dir|
+  next unless File.directory?(dir)
+  basename = File.basename(dir)
+  unless ["en-US", "screenshots", "review_information"].include?(basename)
+    FileUtils.rm_rf(dir)
+  end
+end
+
 existing_locales = Dir.glob(File.join(temp_metadata_dir, "*")).select { |f| File.directory?(f) }.map { |f| File.basename(f) }
 locales_to_update = existing_locales.reject { |name| ["screenshots", "review_information"].include?(name) }
 locales_to_update = ["en-US", "id"] if locales_to_update.empty?
@@ -231,17 +263,80 @@ locales_to_update.each do |locale|
   puts "   📝 Keywords [#{locale}] diselaraskan -> '#{app_name}'"
 end
 
-# 7. Interactive Confirmation & Execution
+# 7. Validation
+puts "\n🔍 Melakukan validasi metadata sebelum mengunggah..."
+validation_failed = false
+
+locales_to_update.each do |locale|
+  locale_path = File.join(temp_metadata_dir, locale)
+  
+  # Check Name (Max 30 chars)
+  name_file = File.join(locale_path, "name.txt")
+  if File.exist?(name_file)
+    name = File.read(name_file).strip
+    if name.length > 30
+      puts "❌ [#{locale}] Name terlalu panjang: #{name.length} karakter (maksimal 30)"
+      validation_failed = true
+    end
+  end
+  
+  # Check Subtitle (Max 30 chars)
+  subtitle_file = File.join(locale_path, "subtitle.txt")
+  if File.exist?(subtitle_file)
+    subtitle = File.read(subtitle_file).strip
+    if subtitle.length > 30
+      puts "❌ [#{locale}] Subtitle terlalu panjang: #{subtitle.length} karakter (maksimal 30)"
+      validation_failed = true
+    end
+  end
+  
+  # Check Description (Max 4000 chars)
+  desc_file = File.join(locale_path, "description.txt")
+  if File.exist?(desc_file)
+    desc = File.read(desc_file).strip
+    if desc.length > 4000
+      puts "❌ [#{locale}] Description terlalu panjang: #{desc.length} karakter (maksimal 4000)"
+      validation_failed = true
+    end
+  end
+
+  # Check Keywords (Max 100 chars)
+  kw_file = File.join(locale_path, "keywords.txt")
+  if File.exist?(kw_file)
+    kw = File.read(kw_file).strip
+    if kw.length > 100
+      puts "❌ [#{locale}] Keywords terlalu panjang: #{kw.length} karakter (maksimal 100)"
+      validation_failed = true
+    end
+  end
+end
+
+if validation_failed
+  puts "\n❌ Validasi metadata gagal. Silakan perbaiki isi file pada template App Store sebelum mencoba kembali."
+  exit 1
+else
+  puts "✅ Validasi metadata sukses."
+end
+
+# 8. Interactive Confirmation & Execution
 begin
 
   # 8. Build Deliver Options
   options = {
     app_identifier: bundle_id,
     metadata_path: temp_metadata_dir,
-    skip_screenshots: true,
+    screenshots_path: File.join(temp_metadata_dir, "screenshots"),
+    skip_screenshots: false,
+    overwrite_screenshots: true,
+    sync_screenshots: true,
     skip_binary_upload: true,
+    ignore_language_directory_validation: true,
     force: true
   }
+
+  if has_custom_icon && File.exist?(project_icon_path)
+    options[:app_icon] = project_icon_path
+  end
 
   if using_api_key
     puts "🔑 Menggunakan API Key untuk otentikasi..."
@@ -254,11 +349,32 @@ begin
 
   config = FastlaneCore::Configuration.create(Deliver::Options.available_options, options)
   
-  puts "⏳ Menghubungkan ke App Store Connect dan mengunggah metadata..."
+  puts "⏳ Menghubungkan ke App Store Connect dan mengunggah metadata & screenshots..."
   
   # Jalankan upload dalam thread agar responsive
   upload_thread = Thread.new do
-    Deliver::Runner.new(config).run
+    # Initialize runner first so it authenticates Spaceship automatically
+    runner = Deliver::Runner.new(config)
+
+    # 8a. Wipe all existing screenshots manually across all locales
+    puts "🧹 Menghapus seluruh screenshot yang ada di App Store Connect..."
+    app = Deliver.cache[:app]
+    if app
+      edit_version = app.get_edit_app_store_version
+      if edit_version
+        localizations = edit_version.get_app_store_version_localizations
+        localizations.each do |loc|
+          sets = loc.get_app_screenshot_sets
+          sets.each do |set|
+            puts "   🗑️  Menghapus screenshot lama dari locale: #{loc.locale}"
+            set.delete!
+          end
+        end
+      end
+    end
+
+    # 8b. Run Deliver to upload the new en-US metadata & screenshots
+    runner.run
   end
   
   spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
