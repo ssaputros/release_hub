@@ -58,3 +58,7 @@ build_result/*
 # Ignore files inside credentials but keep the folder
 credentials/*
 !credentials/.gitkeep
+
+# Ignore files inside tmp but keep the folder
+tmp/*
+!tmp/.gitkeep

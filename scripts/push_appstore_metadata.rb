@@ -38,7 +38,8 @@ if run_id.nil? || run_id.empty?
   puts "0) Keluar"
   puts "------------------------------------------------------------"
   print "Pilihan Anda: "
-  choice = $stdin.gets.chomp.strip
+  choice_input = $stdin.gets
+  choice = choice_input ? choice_input.chomp.strip : ""
   
   if choice == '0' || choice.empty?
     puts "Batal."
@@ -78,7 +79,8 @@ if app_type.nil? || app_type.empty?
     puts "0) Keluar"
     puts "------------------------------------------------------------"
     print "Pilihan Anda: "
-    type_choice = $stdin.gets.chomp.strip
+    type_choice_input = $stdin.gets
+    type_choice = type_choice_input ? type_choice_input.chomp.strip : ""
     
     if type_choice == '0' || type_choice.empty?
       puts "Batal."
@@ -110,21 +112,32 @@ puts "\n============================================================"
 puts "🔑 INPUT BUNDLE ID"
 puts "============================================================"
 print "Masukkan Bundle ID Aplikasi (Default: #{default_bundle_id}): "
-input_bundle_id = $stdin.gets.chomp.strip
+input_bundle_id_raw = $stdin.gets
+input_bundle_id = input_bundle_id_raw ? input_bundle_id_raw.chomp.strip : ""
 bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
-metadata_root = File.join(project_root, "store_listings", folder_type)
-metadata_ios_path = File.join(metadata_root, "ios")
+template_root = File.join(project_root, "store_listings", folder_type)
+template_ios_path = File.join(template_root, "ios")
 
-# Validate metadata path exists
-unless File.directory?(metadata_ios_path)
+# Validate template path exists
+unless File.directory?(template_ios_path)
   puts "❌ Error: Template untuk tipe '#{app_type}' tidak ditemukan di 'store_listings/'."
-  puts "   Jalur dicari: #{metadata_ios_path}"
+  puts "   Jalur dicari: #{template_ios_path}"
   puts "   Silakan download template terlebih dahulu menggunakan menu Download App Store Metadata."
   exit 1
 end
+
+# Setup temporary directory inside project_root/tmp/project/<type>
+tmp_dir = File.join(project_root, "tmp")
+tmp_base = File.join(tmp_dir, run_id, "ios")
+FileUtils.mkdir_p(tmp_base)
+temp_metadata_dir = File.join(tmp_base, "metadata_#{Time.now.to_i}")
+FileUtils.mkdir_p(temp_metadata_dir)
+
+puts "📂 Menyalin template ke folder temporary: #{temp_metadata_dir}"
+FileUtils.cp_r(File.join(template_ios_path, "."), temp_metadata_dir)
 
 puts "\n============================================================"
 puts "ℹ️ TARGET PUSH APP STORE METADATA"
@@ -133,7 +146,8 @@ puts "Project ID     : #{run_id}"
 puts "Project Name   : #{app_data['Project']['Project Name']}"
 puts "App Type       : #{app_type}"
 puts "Bundle ID      : #{bundle_id}"
-puts "Metadata Path  : #{metadata_ios_path}"
+puts "Template Path  : #{template_ios_path}"
+puts "Temp Path      : #{temp_metadata_dir}"
 puts "============================================================\n"
 
 # 4. Authenticate Setup
@@ -145,6 +159,10 @@ apple_id = ENV['APPLE_ID_USERNAME']
 if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
   puts "❌ Konfigurasi App Store Connect belum lengkap di .env."
   puts "   Anda harus mengisi ASC_ISSUER_ID (API Key) ATAU APPLE_ID_USERNAME (Apple ID biasa)."
+  # Clean up temp folder before exit
+  if temp_metadata_dir && File.directory?(temp_metadata_dir)
+    FileUtils.rm_rf(temp_metadata_dir)
+  end
   exit 1
 end
 
@@ -154,18 +172,52 @@ if using_api_key
   key_filepath = File.expand_path("../#{key_filepath}", script_dir)
   if !File.exist?(key_filepath)
     puts "❌ File API Key tidak ditemukan di: #{key_filepath}"
+    # Clean up temp folder before exit
+    if temp_metadata_dir && File.directory?(temp_metadata_dir)
+      FileUtils.rm_rf(temp_metadata_dir)
+    end
     exit 1
   end
 end
 
-# 5. Apply project custom values dynamically
-puts "⚙️ Menyelaraskan informasi proyek (Name & Keywords) ke dalam template..."
+# 5. Handle Icon download & prepare
+custom_icon_url = app_data['Project']['Icon']
+has_custom_icon = !custom_icon_url.nil? && !custom_icon_url.strip.empty?
+
+if has_custom_icon
+  puts "⬇️ Custom icon ditemukan: #{custom_icon_url}. Mengunduh dan mempersiapkan..."
+  # Clean old icon files
+  project_icon_path = File.join(project_root, "icon", "icon.png")
+  FileUtils.rm_f(project_icon_path)
+  FileUtils.rm_f(File.join(project_root, "icon", "icon_raw"))
+
+  # Run prepare-icon.sh
+  prepare_script = File.join(project_root, "scripts", "prepare-icon.sh")
+  system("bash", prepare_script, custom_icon_url)
+  
+  if File.exist?(project_icon_path)
+    puts "✅ Custom icon berhasil diunduh dan dipersiapkan."
+  else
+    puts "⚠️ Gagal mempersiapkan custom icon. Menggunakan icon bawaan template."
+  end
+else
+  puts "ℹ️ Tidak ada custom icon untuk project ini. Menggunakan icon bawaan template."
+end
+
+# 6. Apply project custom values dynamically
+puts "⚙️ Menyelaraskan informasi proyek (Name & Keywords) ke dalam temporary metadata..."
 app_name = app_data['Project']['App Name'] || "My App"
-existing_locales = Dir.glob(File.join(metadata_ios_path, "*")).select { |f| File.directory?(f) }.map { |f| File.basename(f) }
-locales_to_update = existing_locales.empty? ? ["en-US", "id"] : existing_locales
+if app_type == "Approval Apps"
+  app_name = app_name.gsub(/\b(hris|hr|hrm)\b/i, '').strip
+  app_name = app_name.gsub(/\s+/, ' ')
+  app_name = "#{app_name} Approval".strip unless app_name.downcase.include?('approval')
+end
+existing_locales = Dir.glob(File.join(temp_metadata_dir, "*")).select { |f| File.directory?(f) }.map { |f| File.basename(f) }
+locales_to_update = existing_locales.reject { |name| ["screenshots", "review_information"].include?(name) }
+locales_to_update = ["en-US", "id"] if locales_to_update.empty?
 
 locales_to_update.each do |locale|
-  locale_path = File.join(metadata_ios_path, locale)
+  locale_path = File.join(temp_metadata_dir, locale)
   FileUtils.mkdir_p(locale_path) unless File.directory?(locale_path)
   
   # 1. Update Name dengan App Name proyek
@@ -179,33 +231,27 @@ locales_to_update.each do |locale|
   puts "   📝 Keywords [#{locale}] diselaraskan -> '#{app_name}'"
 end
 
-# 6. Interactive Confirmation
-print "\nApakah Anda yakin ingin mengunggah metadata ini ke App Store Connect? (y/n): "
-confirm = $stdin.gets.chomp.strip.downcase
-unless confirm == 'y' || confirm == 'yes'
-  puts "Dibatalkan."
-  exit 0
-end
-
-# 6. Build Deliver Options
-options = {
-  app_identifier: bundle_id,
-  metadata_path: metadata_ios_path,
-  skip_screenshots: true,
-  skip_binary_upload: true,
-  force: true
-}
-
-if using_api_key
-  puts "🔑 Menggunakan API Key untuk otentikasi..."
-  options[:api_key_path] = key_filepath
-else
-  puts "🔑 Menggunakan Apple ID (#{apple_id}) untuk otentikasi..."
-  options[:username] = apple_id
-  options[:team_id] = ENV['ITC_TEAM_ID'] if ENV['ITC_TEAM_ID']
-end
-
+# 7. Interactive Confirmation & Execution
 begin
+
+  # 8. Build Deliver Options
+  options = {
+    app_identifier: bundle_id,
+    metadata_path: temp_metadata_dir,
+    skip_screenshots: true,
+    skip_binary_upload: true,
+    force: true
+  }
+
+  if using_api_key
+    puts "🔑 Menggunakan API Key untuk otentikasi..."
+    options[:api_key_path] = key_filepath
+  else
+    puts "🔑 Menggunakan Apple ID (#{apple_id}) untuk otentikasi..."
+    options[:username] = apple_id
+    options[:team_id] = ENV['ITC_TEAM_ID'] if ENV['ITC_TEAM_ID']
+  end
+
   config = FastlaneCore::Configuration.create(Deliver::Options.available_options, options)
   
   puts "⏳ Menghubungkan ke App Store Connect dan mengunggah metadata..."
@@ -233,4 +279,9 @@ rescue => ex
   puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
   puts ex.message
   exit 1
+ensure
+  if temp_metadata_dir && File.directory?(temp_metadata_dir)
+    puts "\n🧹 Membersihkan folder temporary: #{temp_metadata_dir}"
+    FileUtils.rm_rf(temp_metadata_dir)
+  end
 end

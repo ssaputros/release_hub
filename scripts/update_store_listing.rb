@@ -42,7 +42,8 @@ if run_id.nil? || run_id.empty?
   puts "0) Keluar"
   puts "------------------------------------------------------------"
   print "Pilihan Anda: "
-  choice = $stdin.gets.chomp.strip
+  choice_input = $stdin.gets
+  choice = choice_input ? choice_input.chomp.strip : ""
   
   if choice == '0' || choice.empty?
     puts "Batal."
@@ -60,7 +61,7 @@ end
 
 app_data = projects[run_id]
 unless app_data
-  puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
+  puts "❌ Error: Project dengan ID '#{run_id}' not found in projects.json."
   exit 1
 end
 
@@ -82,7 +83,8 @@ if app_type.nil? || app_type.empty?
     puts "0) Keluar"
     puts "------------------------------------------------------------"
     print "Pilihan Anda: "
-    type_choice = $stdin.gets.chomp.strip
+    type_choice_input = $stdin.gets
+    type_choice = type_choice_input ? type_choice_input.chomp.strip : ""
     
     if type_choice == '0' || type_choice.empty?
       puts "Batal."
@@ -111,16 +113,26 @@ package_name = "#{prefix}.#{run_id}"
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
-metadata_root = File.join(project_root, "store_listings", folder_type)
-metadata_android_path = File.join(metadata_root, "android")
+template_root = File.join(project_root, "store_listings", folder_type)
+template_android_path = File.join(template_root, "android")
 
-# Validate metadata path exists
-unless File.directory?(metadata_android_path)
+# Validate template path exists
+unless File.directory?(template_android_path)
   puts "❌ Error: Template untuk tipe '#{app_type}' tidak ditemukan di 'store_listings/'."
-  puts "   Jalur dicari: #{metadata_android_path}"
+  puts "   Jalur dicari: #{template_android_path}"
   puts "   Silakan download template terlebih dahulu menggunakan menu Download Play Store Metadata."
   exit 1
 end
+
+# Setup temporary directory inside project_root/tmp/project/<type>
+tmp_dir = File.join(project_root, "tmp")
+tmp_base = File.join(tmp_dir, run_id, "android")
+FileUtils.mkdir_p(tmp_base)
+temp_metadata_dir = File.join(tmp_base, "metadata_#{Time.now.to_i}")
+FileUtils.mkdir_p(temp_metadata_dir)
+
+puts "📂 Menyalin template ke folder temporary: #{temp_metadata_dir}"
+FileUtils.cp_r(File.join(template_android_path, "."), temp_metadata_dir)
 
 puts "\n============================================================"
 puts "ℹ️ INFORMASI TARGET UPDATE STORE LISTING"
@@ -129,19 +141,51 @@ puts "Project ID     : #{run_id}"
 puts "Project Name   : #{app_data['Project']['Project Name']}"
 puts "App Type       : #{app_type}"
 puts "Package Name   : #{package_name}"
-puts "Metadata Path  : #{metadata_root}"
+puts "Template Path  : #{template_android_path}"
+puts "Temp Path      : #{temp_metadata_dir}"
 puts "============================================================\n"
 
-# 4. Define locales
-locales = ["en-US", "id"] # Default locales
+# 4. Handle Icon download & prepare
+custom_icon_url = app_data['Project']['Icon']
+has_custom_icon = !custom_icon_url.nil? && !custom_icon_url.strip.empty?
 
-# 5. Apply project custom values dynamically
-puts "⚙️ Menyelaraskan informasi proyek (Title & Icon) ke dalam template..."
+if has_custom_icon
+  puts "⬇️ Custom icon ditemukan: #{custom_icon_url}. Mengunduh dan mempersiapkan..."
+  # Clean old icon files
+  project_icon_path = File.join(project_root, "icon", "icon.png")
+  FileUtils.rm_f(project_icon_path)
+  FileUtils.rm_f(File.join(project_root, "icon", "icon_raw"))
+
+  # Run prepare-icon.sh
+  prepare_script = File.join(project_root, "scripts", "prepare-icon.sh")
+  system("bash", prepare_script, custom_icon_url, "512")
+  
+  if File.exist?(project_icon_path)
+    puts "✅ Custom icon berhasil diunduh dan dipersiapkan."
+  else
+    puts "⚠️ Gagal mempersiapkan custom icon. Menggunakan icon bawaan template."
+    has_custom_icon = false
+  end
+else
+  puts "ℹ️ Tidak ada custom icon untuk project ini. Menggunakan icon bawaan template."
+end
+
+# 5. Detect locales in the template
+existing_locales = Dir.glob(File.join(temp_metadata_dir, "*")).select { |f| File.directory?(f) }.map { |f| File.basename(f) }
+locales = existing_locales.empty? ? ["en-US", "id"] : existing_locales
+
+# 6. Apply project custom values dynamically
+puts "⚙️ Menyelaraskan informasi proyek (Title & Icon) ke dalam temporary metadata..."
 app_name = app_data['Project']['App Name'] || "My App"
+if app_type == "Approval Apps"
+  app_name = app_name.gsub(/\b(hris|hr|hrm)\b/i, '').strip
+  app_name = app_name.gsub(/\s+/, ' ')
+  app_name = "#{app_name} Approval".strip unless app_name.downcase.include?('approval')
+end
 project_icon_path = File.join(project_root, "icon", "icon.png")
 
 locales.each do |locale|
-  locale_path = File.join(metadata_android_path, locale)
+  locale_path = File.join(temp_metadata_dir, locale)
   FileUtils.mkdir_p(locale_path) unless File.directory?(locale_path)
   
   # 1. Update Title dengan App Name proyek
@@ -149,24 +193,24 @@ locales.each do |locale|
   File.write(title_file, app_name)
   puts "   📝 Title [#{locale}] diselaraskan -> '#{app_name}'"
 
-  # 2. Update Icon jika ada di project
-  if File.exist?(project_icon_path)
+  # 2. Update Icon jika custom icon berhasil disiapkan
+  if has_custom_icon && File.exist?(project_icon_path)
     images_path = File.join(locale_path, "images")
     FileUtils.mkdir_p(images_path) unless File.directory?(images_path)
     dest_icon = File.join(images_path, "icon.png")
     FileUtils.cp(project_icon_path, dest_icon)
-    puts "   🖼️  Icon [#{locale}] diselaraskan menggunakan icon project"
+    puts "   🖼️  Icon [#{locale}] diselaraskan menggunakan custom icon project"
   else
-    puts "   ℹ️  Icon project tidak ditemukan. Menggunakan icon bawaan template."
+    puts "   ℹ️  Icon [#{locale}] menggunakan icon bawaan template"
   end
 end
 
-# 6. Validation
+# 7. Validation
 puts "\n🔍 Melakukan validasi metadata sebelum mengunggah..."
 validation_failed = false
 
 locales.each do |locale|
-  locale_path = File.join(metadata_android_path, locale)
+  locale_path = File.join(temp_metadata_dir, locale)
   
   # Check Title (Max 50 chars)
   title_file = File.join(locale_path, "title.txt")
@@ -201,30 +245,29 @@ end
 
 if validation_failed
   puts "\n❌ Validasi gagal. Silakan perbaiki metadata Anda terlebih dahulu."
+  # Clean up before exit
+  if temp_metadata_dir && File.directory?(temp_metadata_dir)
+    puts "🧹 Membersihkan folder temporary: #{temp_metadata_dir}"
+    FileUtils.rm_rf(temp_metadata_dir)
+  end
   exit 1
 end
 puts "✅ Validasi metadata berhasil!"
 
-# 6. Interactive Confirmation
-print "\nApakah Anda yakin ingin mengunggah metadata ini ke Google Play Console? (y/n): "
-confirm = $stdin.gets.chomp.strip.downcase
-unless confirm == 'y' || confirm == 'yes'
-  puts "Dibatalkan."
-  exit 0
-end
-
-# 7. Execute Fastlane Supply Uploader
-puts "\n🚀 Memulai proses pengunggahan ke Google Play Store via Fastlane Supply..."
-
+# 8. Interactive Confirmation & Execution
 begin
+  puts "\n🚀 Memulai proses pengunggahan ke Google Play Store via Fastlane Supply..."
+  
   require 'supply'
   
   # Supply requires metadata_path to point to the directory containing locale folders directly, 
-  # which in our case is 'store_listings/<App Type>/<Branch>/metadata/android'
+  # which is our temp_metadata_dir
   options = {
     package_name: package_name,
     json_key: json_key,
-    metadata_path: metadata_android_path,
+    metadata_path: temp_metadata_dir,
+    track: 'internal',                # Use internal track to avoid crashes on empty production track
+    check_superseded_tracks: false,   # Disable track checking to avoid crashes
     skip_upload_apk: true,
     skip_upload_aab: true,
     skip_upload_changelogs: true,
@@ -232,10 +275,29 @@ begin
     skip_upload_screenshots: false   # Allow upload if present
   }
   
-  config = FastlaneCore::Configuration.create(Supply::Options.available_options, options)
+  Supply.config = FastlaneCore::Configuration.create(Supply::Options.available_options, options)
+  
+  # Monkey-patch Supply::Uploader to bypass track and release checks when skipping changelogs.
+  # This fixes the crash where fetch_track_and_release! tries to call .size on nil when there are no releases.
+  module Supply
+    class Uploader
+      def perform_upload_meta(version_codes, track_name)
+        if (!Supply.config[:skip_upload_metadata] || !Supply.config[:skip_upload_images] || !Supply.config[:skip_upload_screenshots]) && metadata_path
+          UI.message("Bypassing release/track checks to upload store listing metadata directly...")
+          release_notes_queue = Queue.new
+          upload_worker = create_meta_upload_worker
+          
+          # all_languages already ignores hidden folders like . or ..
+          upload_jobs = all_languages.map { |lang| UploadJob.new(lang, nil, release_notes_queue) }
+          upload_worker.batch_enqueue(upload_jobs)
+          upload_worker.start
+        end
+      end
+    end
+  end
   
   upload_thread = Thread.new do
-    Supply::Uploader.new.perform_upload(config)
+    Supply::Uploader.new.perform_upload
   end
   
   # Spinner feedback
@@ -257,4 +319,9 @@ rescue => ex
   puts "\n❌ Terjadi kesalahan saat mengunggah ke Play Store:"
   puts ex.message
   exit 1
+ensure
+  if temp_metadata_dir && File.directory?(temp_metadata_dir)
+    puts "\n🧹 Membersihkan folder temporary: #{temp_metadata_dir}"
+    FileUtils.rm_rf(temp_metadata_dir)
+  end
 end

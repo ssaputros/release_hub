@@ -43,11 +43,11 @@ begin
     skip_upload_screenshots: true
   }
 
-  config = FastlaneCore::Configuration.create(Supply::Options.available_options, options)
+  Supply.config = FastlaneCore::Configuration.create(Supply::Options.available_options, options)
   
   # Jalankan upload via thread agar kita bisa menampilkan indikator progress (menghindari kesan terminal hang)
   upload_thread = Thread.new do
-    Supply::Uploader.new.perform_upload(config)
+    Supply::Uploader.new.perform_upload
   end
   
   sleep 2

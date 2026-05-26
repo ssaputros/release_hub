@@ -2,6 +2,7 @@
 
 # Inisialisasi variabel
 ICON_URL="$1"
+SIZE="${2:-1024}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." &> /dev/null && pwd)"
 ICON_DIR="${ROOT_DIR}/icon"
@@ -53,7 +54,7 @@ echo "⚙️ Mengoptimalkan icon (Safe Zone 15% padding, background putih)..."
 
 # Gunakan script Python untuk optimasi icon
 if command -v python3 >/dev/null 2>&1; then
-    python3 "${SCRIPT_DIR}/optimize_icon.py" "$RAW_ICON" "$OPTIMIZED_ICON"
+    python3 "${SCRIPT_DIR}/optimize_icon.py" "$RAW_ICON" "$OPTIMIZED_ICON" "$SIZE"
 else
     echo "⚠️ Command 'python3' tidak ditemukan. Menyimpan as is..."
     cp "$RAW_ICON" "$OPTIMIZED_ICON"

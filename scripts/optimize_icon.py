@@ -47,7 +47,8 @@ def optimize_icon(input_path, output_path, padding_percent=0.15, size=1024):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python3 optimize_icon.py <input_path> <output_path>")
+        print("Usage: python3 optimize_icon.py <input_path> <output_path> [size]")
         sys.exit(1)
     
-    optimize_icon(sys.argv[1], sys.argv[2])
+    size = int(sys.argv[3]) if len(sys.argv) > 3 else 1024
+    optimize_icon(sys.argv[1], sys.argv[2], size=size)
