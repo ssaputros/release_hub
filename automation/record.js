@@ -32,6 +32,7 @@ const { execSync } = require('child_process');
     const context = await chromium.launchPersistentContext(profileDir, {
       headless: false,
       channel: 'chrome',
+      viewport: { width: 1280, height: 720 },
       args: ['--disable-blink-features=AutomationControlled'],
       ignoreDefaultArgs: ['--enable-automation']
     });

@@ -356,8 +356,10 @@ fi
                 echo "8) Create Playstore App"
                 echo "9) Setup Playstore App Information"
                 echo "10) Setup Store Listing"
+                echo "11) Record Playwright UI"
+                echo "12) Update Play Console Dashboard ID"
                 echo "------------------------------------------------------------"
-                echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5): "
+                echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
                 read -r action_choice
 
                 # Ganti koma dengan spasi dan tambahkan spasi di awal/akhir agar pengecekan angka lebih aman (mencegah 10 terbaca sebagai 1)
@@ -381,7 +383,7 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]]; then
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI GOOGLE PLAY CONSOLE"
                         echo "============================================================"
@@ -398,34 +400,32 @@ fi
                             npm run auth
                         fi
                         
+                        if [[ "$clean_choice" == *" 12 "* ]]; then
+                            node update_dashboard_id.js "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
+                        fi
+                        
                         if [[ "$clean_choice" == *" 8 "* ]]; then
-                            if ! node create_app.js "$TARGET_ID"; then
-                                echo -n "❌ Skrip gagal dijalankan. Apakah Anda ingin membuka perekam UI (Playwright Inspector) untuk memperbarui skrip? (y/n): "
-                                read -r record_choice
-                                if [[ "$record_choice" == "y" || "$record_choice" == "Y" ]]; then
-                                    npm run record
+                            if node create_app.js "$TARGET_ID"; then
+                                if [[ "$clean_choice" != *" 9 "* ]]; then
+                                    echo "🚀 Otomatis melanjutkan ke Setup Playstore App Information (Langkah 9)..."
+                                    node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
                                 fi
+                            else
+                                echo "❌ create_app.js gagal dijalankan."
                             fi
                         fi
                         
                         if [[ "$clean_choice" == *" 9 "* ]]; then
-                            if ! node runner_app_info.js "$TARGET_ID"; then
-                                echo -n "❌ Skrip gagal dijalankan. Apakah Anda ingin membuka perekam UI (Playwright Inspector) untuk memperbarui skrip? (y/n): "
-                                read -r record_choice
-                                if [[ "$record_choice" == "y" || "$record_choice" == "Y" ]]; then
-                                    npm run record
-                                fi
-                            fi
+                            node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
                         fi
 
                         if [[ "$clean_choice" == *" 10 "* ]]; then
-                            if ! node runner_store_listing.js "$TARGET_ID"; then
-                                echo -n "❌ Skrip gagal dijalankan. Apakah Anda ingin membuka perekam UI (Playwright Inspector) untuk memperbarui skrip? (y/n): "
-                                read -r record_choice
-                                if [[ "$record_choice" == "y" || "$record_choice" == "Y" ]]; then
-                                    npm run record
-                                fi
-                            fi
+                            node runner_store_listing.js "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                        fi
+
+                        if [[ "$clean_choice" == *" 11 "* ]]; then
+                            echo "🎥 Membuka Playwright Inspector..."
+                            npm run record
                         fi
                         exit 0
                     fi

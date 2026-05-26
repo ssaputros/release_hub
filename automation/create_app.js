@@ -53,6 +53,7 @@ const packageName = meta.packageName;
     const context = await chromium.launchPersistentContext(profileDir, {
       headless: false, // Tetap false agar Anda bisa memantau prosesnya
       channel: 'chrome',
+      viewport: { width: 1280, height: 720 },
       args: ['--disable-blink-features=AutomationControlled'],
       ignoreDefaultArgs: ['--enable-automation']
     });
@@ -115,13 +116,42 @@ const packageName = meta.packageName;
     
     console.log("Klik tombol pembuatan aplikasi...");
     await page.getByRole('button', { name: 'Create app' }).click();
-    // ==========================================
+    // Tunggu sistem Google Play memproses pembuatan aplikasi dan redirect ke dashboard
+    console.log("⏳ Menunggu respons dari Google (menyimpan App ID)...");
     
-    // Tunggu sistem Google Play memproses pembuatan aplikasi
-    console.log("⏳ Menunggu respons dari Google...");
-    await page.waitForTimeout(7000);
+    let appId = null;
+    const startTime = Date.now();
+    const timeout = 60000; // 60 detik
     
-    console.log("✅ Pembuatan aplikasi selesai!");
+    while (Date.now() - startTime < timeout) {
+        const currentUrl = page.url();
+        const match = currentUrl.match(/\/app\/(\d+)/);
+        if (match && match[1]) {
+            appId = match[1];
+            break;
+        }
+        process.stdout.write("⏳.");
+        await page.waitForTimeout(1000);
+    }
+    console.log("\n"); // Baris baru setelah titik-titik
+    
+    if (appId) {
+        console.log(`✅ Mendapatkan Play Console Dashboard (App ID): ${appId}`);
+        
+        const activeType = (process.env.FILTERED_TYPE || appData.Project['Type']).split(',')[0].trim();
+        
+        if (typeof projects[runId]['Play Console Dashboard'] !== 'object' || projects[runId]['Play Console Dashboard'] === null) {
+            projects[runId]['Play Console Dashboard'] = {};
+        }
+        projects[runId]['Play Console Dashboard'][activeType] = appId;
+        fs.writeFileSync(projectsPath, JSON.stringify(projects, null, 2));
+        console.log(`✅ Berhasil menyimpan ID ke projects.json!`);
+    } else {
+        console.log("⚠️ Gagal mengekstrak App ID. URL terakhir:", finalUrl);
+        console.log("Harap isi 'Play Console Dashboard' di projects.json secara manual.");
+    }
+    
+    console.log("✅ Proses pembuatan aplikasi selesai!");
     await context.close();
   } catch (error) {
     console.error("❌ Terjadi kesalahan saat membuat aplikasi:", error.message);

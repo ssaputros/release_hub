@@ -1,6 +1,9 @@
 {
   "smkgemanusantara": {
     "Branch": "smkgemanusantara",
+    "Play Console Dashboard": {
+      "HRM Apps": "4972627734005329386"
+    },
     "Project": {
       "Project Name": "SMK Gema Nusantara",
       "Region": "Indonesia",
@@ -14,6 +17,9 @@
   },
   "sst": {
     "Branch": "sst",
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
     "Project": {
       "Project Name": "Sinergi Selaras Telematika",
       "Region": "Indonesia",
@@ -27,6 +33,9 @@
   },
   "netzsch": {
     "Branch": "netzsch",
+    "Play Console Dashboard": {
+      "HRM Apps": "4974324385230215843"
+    },
     "Project": {
       "Project Name": "NETZSCH",
       "Region": "Indonesia",
@@ -40,6 +49,9 @@
   },
   "progressbicyclecorporation": {
     "Branch": "progressbicyclecorporation",
+    "Play Console Dashboard": {
+      "HRM Apps": "4972644831757280790"
+    },
     "Project": {
       "Project Name": "Progress Bicycle Corporation",
       "Region": "Philippines",
@@ -53,6 +65,10 @@
   },
   "bumiaki": {
     "Branch": "bumiaki",
+    "Play Console Dashboard": {
+      "Approval Apps": "4974474080286405105",
+      "HRM Apps": "4975588764648877989"
+    },
     "Project": {
       "Project Name": "Bumi Aki Group",
       "Region": "Indonesia",
@@ -66,6 +82,10 @@
   },
   "mitraswalayan": {
     "Branch": "mitraswalayan",
+    "Play Console Dashboard": {
+      "Approval Apps": "4976384895413187488",
+      "HRM Apps": "4972592307877693662"
+    },
     "Project": {
       "Project Name": "Mitra Swalayan",
       "Region": "Indonesia",
@@ -79,6 +99,9 @@
   },
   "bft": {
     "Branch": "bft",
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
     "Project": {
       "Project Name": "PT. Borneo Famili Transportama",
       "Region": "Indonesia",

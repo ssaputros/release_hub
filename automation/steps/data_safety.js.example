@@ -1,0 +1,16 @@
+module.exports = async function(page, appData) {
+    console.log("⏳ Memulai eksekusi step: data_safety.js");
+
+    // 1. Paste kode hasil Playwright Record di bawah ini.
+    // Contoh:
+    // await page.getByRole('radio', { name: 'Something' }).click();
+    // await page.getByRole('button', { name: 'Save' }).click();
+
+    // 2. Beri jeda sebentar untuk menunggu render atau proses save.
+    // await page.waitForTimeout(2000); 
+    
+    // 3. Kembali ke dashboard App Content (hanya untuk app_info)
+    // await page.goto('https://play.google.com/console/...');
+    
+    console.log("✅ Step data_safety.js selesai!");
+};

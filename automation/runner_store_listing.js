@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
 
 // 1. Ambil Argumen ID Project dari Command Line
 const runId = process.argv[2];
@@ -31,10 +32,16 @@ const { getAppMeta } = require('../scripts/app_meta.js');
 const meta = getAppMeta(runId, rawAppName, rawAppType, configPath);
 const packageName = meta.packageName;
 
-const steps = [
-    { name: 'app_category_contact.js', path: path.join(__dirname, 'steps/app_category_contact.js') },
-    { name: 'store_listing.js', path: path.join(__dirname, 'steps/store_listing.js') }
+// Gampang mengubah urutan step cukup dengan menggeser baris nama file di bawah ini:
+const stepNames = [
+    'app_category_contact.js',
+    'store_listing.js'
 ];
+
+const steps = stepNames.map(name => ({
+    name: name,
+    path: path.join(__dirname, `steps/${name}`)
+}));
 
 (async () => {
   const profileDir = path.join(__dirname, '../credentials/.chrome_profile');
@@ -53,6 +60,7 @@ const steps = [
     browser = await chromium.launchPersistentContext(profileDir, {
       headless: false,
       channel: 'chrome',
+      viewport: { width: 1280, height: 720 },
       args: ['--disable-blink-features=AutomationControlled'],
       ignoreDefaultArgs: ['--enable-automation']
     });
@@ -81,33 +89,117 @@ const steps = [
         fs.writeFileSync(devIdFile, devId);
     }
 
-    // Navigasi langsung ke halaman Main Store Listing
-    const storeListingUrl = `https://play.google.com/console/${devId}/app/${packageName}/main-store-listing`;
-    console.log(`🔗 Membuka halaman Store Listing: ${storeListingUrl}`);
-    await page.goto(storeListingUrl);
+    const activeType = (process.env.FILTERED_TYPE || appData.Project['Type']).split(',')[0].trim();
+    let dashboardId = "";
+    if (appData['Play Console Dashboard'] && typeof appData['Play Console Dashboard'] === 'object') {
+        dashboardId = appData['Play Console Dashboard'][activeType] || "";
+    }
+    
+    if (!dashboardId) {
+        console.log("\n⚠️ 'Play Console Dashboard' ID masih kosong di projects.json!");
+        console.log("👉 Silakan BUKA APLIKASI target Anda secara manual di browser Playwright yang sedang terbuka.");
+        console.log("⏳ Skrip sedang menunggu Anda masuk ke halaman Dashboard aplikasi...");
+        
+        // Buka halaman utama konsol sebagai titik awal jika belum berada di dalam app
+        let startUrl = 'https://play.google.com/console';
+        if (devId) {
+            startUrl = `https://play.google.com/console/${/^\d+$/.test(devId) ? `developers/${devId}` : devId}/app-list`;
+        }
+        if (!page.url().includes('/app-list') && !page.url().includes('/app/')) {
+            await page.goto(startUrl);
+        }
+
+        await page.waitForURL(/\/app\/(\d+)/, { timeout: 0 });
+        const finalUrl = page.url();
+        const match = finalUrl.match(/\/app\/(\d+)/);
+        
+        if (match && match[1]) {
+            dashboardId = match[1];
+            console.log(`✅ Halaman terdeteksi! Mengekstrak App ID: ${dashboardId}`);
+            
+            // Simpan ke projects.json (always as nested object)
+            if (typeof projects[runId]['Play Console Dashboard'] !== 'object' || projects[runId]['Play Console Dashboard'] === null) {
+                projects[runId]['Play Console Dashboard'] = {};
+            }
+            projects[runId]['Play Console Dashboard'][activeType] = dashboardId;
+            fs.writeFileSync(projectsPath, JSON.stringify(projects, null, 2));
+            console.log("✅ Berhasil menyimpan ID ke projects.json! Melanjutkan eksekusi...");
+        } else {
+            console.error("❌ Gagal mengekstrak App ID dari URL. Berhenti.");
+            process.exit(1);
+        }
+    }
+
+    // Pastikan devIdPath mengandung segment 'developers/'
+    let devIdPath = devId;
+    if (/^\d+$/.test(devId)) {
+        devIdPath = `developers/${devId}`;
+    }
+
+    // Navigasi langsung ke halaman App Dashboard (jika belum berada di sana)
+    const storeListingUrl = `https://play.google.com/console/${devIdPath}/app/${dashboardId}/main-store-listing`;
+    if (!page.url().includes(storeListingUrl)) {
+        console.log(`🔗 Membuka halaman Main Store Listing: ${storeListingUrl}`);
+        await page.goto(storeListingUrl);
+    }
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
     
-    for (let i = 0; i < steps.length; i++) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    const askQuestion = (query) => new Promise(resolve => rl.question(query, resolve));
+
+    const executeStep = async (i) => {
         console.log(`\n⏳ Mengeksekusi Langkah ${i + 1}/${steps.length} (${steps[i].name})...`);
         
-        // Deteksi apakah file fisik skrip ada
         if (!fs.existsSync(steps[i].path)) {
             throw new Error(`File skrip [${steps[i].name}] tidak ditemukan! Anda harus membuat file ini atau melakukan setup/Record UI terlebih dahulu.`);
         }
-
-        // Deteksi apakah skrip masih kosong
         const fileContent = fs.readFileSync(steps[i].path, 'utf8');
         if (!fileContent.includes('await page.')) {
             throw new Error(`Skrip [${steps[i].name}] masih kosong! Anda harus melakukan Record UI untuk langkah ini terlebih dahulu.`);
         }
-
+        
         const stepFunc = require(steps[i].path);
         await stepFunc(page, appData);
-        await page.waitForTimeout(2000); 
+        await page.waitForTimeout(2000);
+        console.log(`✅ Langkah ${steps[i].name} selesai!`);
+    };
+
+    while (true) {
+        console.log("\n============================================================");
+        console.log("🛠️ MENU EKSEKUSI LANGKAH STORE LISTING");
+        console.log("============================================================");
+        for (let i = 0; i < steps.length; i++) {
+            console.log(`${i + 1}) ${steps[i].name}`);
+        }
+        console.log("A) Eksekusi Semua Langkah (Berurutan)");
+        console.log("0) Selesai / Keluar");
+        console.log("------------------------------------------------------------");
+        
+        const answer = (await askQuestion("Pilih langkah (misal: 1, A, 0): ")).trim().toUpperCase();
+        
+        if (answer === '0') {
+            break;
+        } else if (answer === 'A') {
+            for (let i = 0; i < steps.length; i++) {
+                await executeStep(i);
+            }
+            break;
+        } else {
+            const idx = parseInt(answer) - 1;
+            if (!isNaN(idx) && idx >= 0 && idx < steps.length) {
+                await executeStep(idx);
+            } else {
+                console.log("❌ Pilihan tidak valid!");
+            }
+        }
     }
 
-    console.log("\n✅ Semua langkah Store Listing selesai!");
+    rl.close();
+    console.log("\n✅ Selesai mengeksekusi Store Listing!");
   } catch (error) {
     console.error("❌ Terjadi kesalahan saat eksekusi:", error.message);
     process.exit(1);
