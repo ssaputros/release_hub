@@ -53,35 +53,11 @@ if [ -n "$BRANCH" ]; then
     git pull origin "$BRANCH" >/dev/null 2>&1
 fi
 
-if [ -z "$BUILD_TARGET_APK" ] && [ -z "$BUILD_TARGET_IPA" ]; then
-    BUILD_TARGET_APK=true
-    BUILD_TARGET_IPA=true
-fi
-
-if [ "$BUILD_TARGET_APK" = true ]; then
-    echo "  > Build APK..."
-    if ! fvm flutter build apk; then echo "❌ Gagal build APK"; exit 1; fi
-
-    echo "  > Build App Bundle (AAB)..."
-    if ! fvm flutter build appbundle; then echo "❌ Gagal build AAB"; exit 1; fi
-fi
-
-if [ "$BUILD_TARGET_IPA" = true ]; then
-    echo "  > Build IPA..."
-    if ! fvm flutter build ipa; then echo "❌ Gagal build IPA"; exit 1; fi
-fi
-
-echo "============================================================"
-echo "📦 RENAME & MOVE BUILD"
-echo "============================================================"
-
+VERSION=$(grep '^version: ' pubspec.yaml | head -n 1 | awk '{print $2}' | tr -d '\r')
+TIMESTAMP=$(date +"%d-%m-%Y %H.%M")
 TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}"
 mkdir -p "$TARGET_DIR"
 
-TIMESTAMP=$(date +"%d-%m-%Y %H.%M")
-VERSION=$(grep '^version: ' pubspec.yaml | head -n 1 | awk '{print $2}' | tr -d '\r')
-
-# Mengambil konfigurasi Google Drive dari .env
 ENV_FILE="${SCRIPT_DIR}/.env"
 GDRIVE_CRED_PATH=""
 if [ -f "$ENV_FILE" ]; then
@@ -108,14 +84,31 @@ move_and_rename() {
     fi
 }
 
-move_and_rename "build/app/outputs/flutter-apk/app-release.apk" "apk"
-move_and_rename "build/app/outputs/bundle/release/app-release.aab" "aab"
+if [ -z "$BUILD_TARGET_APK" ] && [ -z "$BUILD_TARGET_IPA" ]; then
+    BUILD_TARGET_APK=true
+    BUILD_TARGET_IPA=true
+fi
 
-IPA_FILE=$(find build/ios/ipa -name "*.ipa" 2>/dev/null | head -n 1)
-if [ -n "$IPA_FILE" ]; then
-    move_and_rename "$IPA_FILE" "ipa"
-else
-    echo "  ⚠️ File IPA tidak ditemukan."
+if [ "$BUILD_TARGET_APK" = true ]; then
+    echo "  > Build APK..."
+    if ! fvm flutter build apk; then echo "❌ Gagal build APK"; exit 1; fi
+    move_and_rename "build/app/outputs/flutter-apk/app-release.apk" "apk"
+
+    echo "  > Build App Bundle (AAB)..."
+    if ! fvm flutter build appbundle; then echo "❌ Gagal build AAB"; exit 1; fi
+    move_and_rename "build/app/outputs/bundle/release/app-release.aab" "aab"
+fi
+
+if [ "$BUILD_TARGET_IPA" = true ]; then
+    echo "  > Build IPA..."
+    if ! fvm flutter build ipa; then echo "❌ Gagal build IPA"; exit 1; fi
+    
+    IPA_FILE=$(find build/ios/ipa -name "*.ipa" 2>/dev/null | head -n 1)
+    if [ -n "$IPA_FILE" ]; then
+        move_and_rename "$IPA_FILE" "ipa"
+    else
+        echo "  ⚠️ File IPA tidak ditemukan."
+    fi
 fi
 
 echo "  > Membersihkan sisa perubahan (git restore .)..."

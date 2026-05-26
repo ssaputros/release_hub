@@ -16,7 +16,7 @@ if [ -z "$ID" ] || [ -z "$REGION" ]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." &> /dev/null && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &> /dev/null && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/config.json"
 
 echo "⚙️ SETUP PROJECT HRM"
@@ -28,7 +28,10 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 LOCATION_RAW=$(jq -r ".types[\"$TYPE\"].location // empty" "$CONFIG_FILE")
-FIREBASE_PROJECT_ID=$(jq -r ".firebase_project // empty" "$CONFIG_FILE")
+FIREBASE_PROJECT_ID=$(jq -r ".\"$ID\".\"Firebase Project\" // empty" "${SCRIPT_DIR}/projects.json" 2>/dev/null)
+if [ -z "$FIREBASE_PROJECT_ID" ]; then
+    FIREBASE_PROJECT_ID=$(jq -r ".firebase_project // empty" "$CONFIG_FILE")
+fi
 
 if [ -z "$LOCATION_RAW" ]; then
     echo "  ⚠️ Lokasi untuk tipe $TYPE tidak ditemukan di config.json. Skip setup HRM."

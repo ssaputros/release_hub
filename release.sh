@@ -358,6 +358,7 @@ fi
                 echo "10) Setup Store Listing"
                 echo "11) Record Playwright UI"
                 echo "12) Update Play Console Dashboard ID"
+                echo "13) Bump Version"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
                 read -r action_choice
@@ -383,7 +384,7 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]]; then
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI GOOGLE PLAY CONSOLE"
                         echo "============================================================"
@@ -420,12 +421,29 @@ fi
                         fi
 
                         if [[ "$clean_choice" == *" 10 "* ]]; then
-                            node runner_store_listing.js "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                            echo "============================================================"
+                            echo "🛠️ PILIH METODE SETUP STORE LISTING"
+                            echo "============================================================"
+                            echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
+                            echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
+                            echo "------------------------------------------------------------"
+                            echo -n "Pilihan Anda (default: 1): "
+                            read -r method_choice
+                            
+                            if [[ "$method_choice" == "2" ]]; then
+                                node runner_store_listing.js "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                            else
+                                ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ update_store_listing.rb gagal dijalankan."
+                            fi
                         fi
 
                         if [[ "$clean_choice" == *" 11 "* ]]; then
                             echo "🎥 Membuka Playwright Inspector..."
                             npm run record
+                        fi
+                        
+                        if [[ "$clean_choice" == *" 13 "* ]]; then
+                            ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" || echo "❌ bump_version.rb gagal dijalankan."
                         fi
                         exit 0
                     fi

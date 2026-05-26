@@ -4,6 +4,7 @@
     "Play Console Dashboard": {
       "HRM Apps": "4972627734005329386"
     },
+    "Firebase Project": "hrm-prod-2",
     "Project": {
       "Project Name": "SMK Gema Nusantara",
       "Region": "Indonesia",
@@ -20,6 +21,7 @@
     "Play Console Dashboard": {
       "HRM Apps": ""
     },
+    "Firebase Project": "hashmicro-production-17",
     "Project": {
       "Project Name": "Sinergi Selaras Telematika",
       "Region": "Indonesia",
@@ -36,6 +38,7 @@
     "Play Console Dashboard": {
       "HRM Apps": "4974324385230215843"
     },
+    "Firebase Project": "hashmicro-production-17",
     "Project": {
       "Project Name": "NETZSCH",
       "Region": "Indonesia",
@@ -52,6 +55,7 @@
     "Play Console Dashboard": {
       "HRM Apps": "4972644831757280790"
     },
+    "Firebase Project": "hashmicro-production-17",
     "Project": {
       "Project Name": "Progress Bicycle Corporation",
       "Region": "Philippines",
@@ -69,6 +73,7 @@
       "Approval Apps": "4974474080286405105",
       "HRM Apps": "4975588764648877989"
     },
+    "Firebase Project": "hashmicro-production-15",
     "Project": {
       "Project Name": "Bumi Aki Group",
       "Region": "Indonesia",
@@ -86,6 +91,7 @@
       "Approval Apps": "4976384895413187488",
       "HRM Apps": "4972592307877693662"
     },
+    "Firebase Project": "hashmicro-production-17",
     "Project": {
       "Project Name": "Mitra Swalayan",
       "Region": "Indonesia",
@@ -102,6 +108,7 @@
     "Play Console Dashboard": {
       "HRM Apps": ""
     },
+    "Firebase Project": "hrm-prod-2",
     "Project": {
       "Project Name": "PT. Borneo Famili Transportama",
       "Region": "Indonesia",
@@ -110,6 +117,23 @@
       "Base URL": "https://borneo-famili.hash-009.com",
       "Database": "borneoscore22",
       "Icon": "https://drive.google.com/open?id=1HGwyH6CZ-xMHxJPtTDghYEd1mPiptYQr",
+      "Notes": ""
+    }
+  },
+  "globalmandiri": {
+    "Branch": "global-mandiri-20250915",
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "hashmicro-production-8",
+    "Project": {
+      "Project Name": "Sekolah Global Mandiri",
+      "Region": "Indonesia",
+      "App Name": "HRIS Sekolah Global Mandiri",
+      "Type": "HRM Apps",
+      "Base URL": "https://globalmandiri.hashmicro.co",
+      "Database": "globalmandiri-live",
+      "Icon": "",
       "Notes": ""
     }
   }
