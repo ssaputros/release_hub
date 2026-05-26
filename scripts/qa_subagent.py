@@ -2,8 +2,14 @@
 import sys
 import os
 import pexpect
+import argparse
 
 def run_qa_test():
+    parser = argparse.ArgumentParser(description="Subagent QA CLI Tester")
+    parser.add_argument("--menu", type=int, default=15, choices=[15, 17], help="Menu number to test (15 = App Store, 17 = Play Store)")
+    parser.add_argument("--id", type=str, default="com.hashmicro.eva.sti", help="Bundle ID or Package Name")
+    args = parser.parse_args()
+
     print("============================================================")
     # Gunakan absolute path agar aman
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,6 +18,8 @@ def run_qa_test():
     
     print(f"🤖 MEMULAI SUBAGENT QA UNTUK TESTING MENU DOWNLOAD METADATA")
     print(f"📂 Path release.sh: {release_sh_path}")
+    print(f"📌 Menu: {args.menu}")
+    print(f"📌 ID  : {args.id}")
     print("============================================================")
     
     # Spawn the interactive bash script
@@ -35,24 +43,32 @@ def run_qa_test():
         print("\n[QA] Menunggu prompt menu aksi...")
         child.expect("Pilihan Anda", timeout=15)
         
-        # Kirim "15" untuk mendownload App Store metadata
-        print("\n[QA] Mengirim input Menu: 15")
-        child.sendline("15")
+        # Kirim pilihan menu
+        print(f"\n[QA] Mengirim input Menu: {args.menu}")
+        child.sendline(str(args.menu))
         
-        # Step 3: Tunggu prompt input Bundle ID
-        print("\n[QA] Menunggu prompt input Bundle ID...")
-        child.expect("Masukkan Bundle ID Aplikasi", timeout=15)
+        # Step 3: Tunggu prompt input ID (Bundle ID / Package Name)
+        print("\n[QA] Menunggu prompt input ID...")
+        if args.menu == 15:
+            child.expect("Masukkan Bundle ID Aplikasi", timeout=15)
+        else:
+            child.expect("Masukkan Package Name Aplikasi", timeout=15)
         
-        # Kirim Bundle ID spesifik
-        print("\n[QA] Mengirim Bundle ID: com.hashmicro.eva.sti")
-        child.sendline("com.hashmicro.eva.sti")
+        # Kirim ID spesifik
+        print(f"\n[QA] Mengirim ID: {args.id}")
+        child.sendline(args.id)
         
         # Step 4: Tunggu proses download selesai
         print("\n[QA] Menunggu proses download metadata selesai...")
-        # Kita bisa expect pesan sukses atau timeout
-        index = child.expect(["Download App Store Metadata selesai dengan sukses!", "❌ Terjadi kesalahan"], timeout=180)
         
-        if index == 0:
+        success_phrases = [
+            "Download App Store Metadata selesai dengan sukses!",
+            "Download Play Store Metadata selesai dengan sukses!"
+        ]
+        
+        index = child.expect(success_phrases + ["❌ Terjadi kesalahan"], timeout=180)
+        
+        if index in [0, 1]:
             print("\n============================================================")
             print("✅ TEST QA BERHASIL: Metadata berhasil didownload!")
             print("============================================================")

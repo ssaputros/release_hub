@@ -362,6 +362,7 @@ fi
                 echo "14) Push Playstore Listing"
                 echo "15) Download App Store Metadata"
                 echo "16) Push App Store Metadata"
+                echo "17) Download Play Store Metadata"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
                 read -r action_choice
@@ -387,7 +388,7 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]]; then
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
                         echo "============================================================"
@@ -465,6 +466,10 @@ fi
 
                         if [[ "$clean_choice" == *" 16 "* ]]; then
                             ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
+                        fi
+
+                        if [[ "$clean_choice" == *" 17 "* ]]; then
+                            ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ download_playstore_metadata.rb gagal dijalankan."
                         fi
                         exit 0
                     fi
