@@ -72,6 +72,19 @@ else
     # Set Branch sama dengan ID
     BRANCH="$ID"
 
+    # Generate Branch JSON object based on TYPE
+    BRANCH_JSON="{"
+    IFS=',' read -ra ADDR <<< "$TYPE"
+    for i in "${!ADDR[@]}"; do
+        type_clean=$(echo "${ADDR[$i]}" | xargs)
+        BRANCH_JSON+="\"$type_clean\": \"$BRANCH\""
+        if [ $i -lt $((${#ADDR[@]}-1)) ]; then
+            BRANCH_JSON+=", "
+        fi
+    done
+    BRANCH_JSON+="}"
+
+
     # Membersihkan dan memformat BASE_URL
     if [ -n "$BASE_URL" ]; then
         RAW_URL=$(echo "$BASE_URL" | tr ',' ' ' | tr ' ' '\n' | grep '\.' | tail -n 1)
@@ -88,7 +101,7 @@ else
     if command -v jq >/dev/null 2>&1; then
         NEW_PROJECT=$(jq -n \
           --arg id "$ID" \
-          --arg branch "$BRANCH" \
+          --argjson branch "$BRANCH_JSON" \
           --arg pn "$PROJECT" \
           --arg r "$REGION" \
           --arg an "$APP_NAME" \

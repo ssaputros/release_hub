@@ -1,6 +1,8 @@
 {
   "smkgemanusantara": {
-    "Branch": "smkgemanusantara",
+    "Branch": {
+      "HRM Apps": "smkgemanusantara"
+    },
     "Play Console Dashboard": {
       "HRM Apps": "4972627734005329386"
     },
@@ -25,7 +27,9 @@
     }
   },
   "sst": {
-    "Branch": "sst",
+    "Branch": {
+      "HRM Apps": "sst"
+    },
     "Play Console Dashboard": {
       "HRM Apps": ""
     },
@@ -50,7 +54,9 @@
     }
   },
   "netzsch": {
-    "Branch": "netzsch",
+    "Branch": {
+      "HRM Apps": "netzsch"
+    },
     "Play Console Dashboard": {
       "HRM Apps": "4974324385230215843"
     },
@@ -75,7 +81,9 @@
     }
   },
   "progressbicyclecorporation": {
-    "Branch": "progressbicyclecorporation",
+    "Branch": {
+      "HRM Apps": "progressbicyclecorporation"
+    },
     "Play Console Dashboard": {
       "HRM Apps": "4972644831757280790"
     },
@@ -100,7 +108,10 @@
     }
   },
   "bumiaki": {
-    "Branch": "bumiaki",
+    "Branch": {
+      "Approval Apps": "bumiaki",
+      "HRM Apps": "bumiaki"
+    },
     "Play Console Dashboard": {
       "Approval Apps": "4974474080286405105",
       "HRM Apps": "4975588764648877989"
@@ -129,7 +140,10 @@
     }
   },
   "mitraswalayan": {
-    "Branch": "mitra",
+    "Branch": {
+      "Approval Apps": "mitra",
+      "HRM Apps": "mitra"
+    },
     "Play Console Dashboard": {
       "Approval Apps": "4976384895413187488",
       "HRM Apps": "4972592307877693662"
@@ -158,7 +172,9 @@
     }
   },
   "bft": {
-    "Branch": "bft",
+    "Branch": {
+      "HRM Apps": "bft"
+    },
     "Play Console Dashboard": {
       "HRM Apps": ""
     },
@@ -183,7 +199,9 @@
     }
   },
   "globalmandiri": {
-    "Branch": "global-mandiri-20250915",
+    "Branch": {
+      "HRM Apps": "global-mandiri-20250915"
+    },
     "Play Console Dashboard": {
       "HRM Apps": ""
     },
@@ -205,6 +223,38 @@
     },
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.globalmandiri"
+    }
+  },
+  "ziopakartek": {
+    "Branch": {
+      "Approval Apps": "zio",
+      "HRM Apps": "zio"
+    },
+    "Play Console Dashboard": {
+      "Approval Apps": "",
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Zio Pakartek Profesi",
+      "Region": "Indonesia",
+      "App Name": {
+        "Approval Apps": "ZPP Approval",
+        "HRM Apps": "ZPP HRIS"
+      },
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://zio-pakartek.hashmicro.co",
+      "Database": "zio-pakartek-live",
+      "Icon": "https://drive.google.com/open?id=1txmDI-HBLJ-aoBk0fWa8huxJX7rTjPAp",
+      "Notes": "LMS, Training, Career Transition"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.approval.zio",
+      "HRM Apps": "com.hashmicro.eva.zio"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.approval.zio",
+      "HRM Apps": "com.hashmicro.eva.zio"
     }
   }
 }

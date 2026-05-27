@@ -2,9 +2,10 @@
 
 # Inisialisasi variabel
 RUN_ID="$1"
+APP_TYPE="$2"
 
-if [ -z "$RUN_ID" ]; then
-    echo "⚠️ Penggunaan: ./build_app.sh <project_id>"
+if [ -z "$RUN_ID" ] || [ -z "$APP_TYPE" ]; then
+    echo "⚠️ Penggunaan: ./build_app.sh <project_id> <app_type>"
     exit 1
 fi
 
@@ -19,20 +20,20 @@ if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
     fi
     
     PROJECT=$(jq -r ".\"$RUN_ID\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
-    APP_NAME=$(jq -r ".\"$RUN_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
-    TYPE=$(jq -r ".\"$RUN_ID\".Project.Type // empty" "$PROJECT_FILE")
-    BRANCH=$(jq -r ".\"$RUN_ID\".Branch // empty" "$PROJECT_FILE")
+    # Coba ambil App Name spesifik tipe, fallback ke App Name general
+    APP_NAME=$(jq -r ".\"$RUN_ID\".Project.\"App Name\"[\"$APP_TYPE\"] // .\"$RUN_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
+    BRANCH=$(jq -r ".\"$RUN_ID\".Branch[\"$APP_TYPE\"] // empty" "$PROJECT_FILE")
     
     APP_LOCATION=""
     GDRIVE_FOLDER_ID=""
     if [ -f "$CONFIG_FILE" ]; then
-        RAW_LOCATION=$(jq -r ".types[\"$TYPE\"].location // empty" "$CONFIG_FILE")
+        RAW_LOCATION=$(jq -r ".types[\"$APP_TYPE\"].location // empty" "$CONFIG_FILE")
         APP_LOCATION=$(eval echo "$RAW_LOCATION")
-        GDRIVE_FOLDER_ID=$(jq -r ".types[\"$TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
+        GDRIVE_FOLDER_ID=$(jq -r ".types[\"$APP_TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
     fi
 
     if [ -z "$APP_LOCATION" ] || [ ! -d "$APP_LOCATION" ]; then
-        echo "❌ Error: Lokasi project untuk tipe '$TYPE' tidak valid atau tidak ditemukan ($APP_LOCATION)."
+        echo "❌ Error: Lokasi project untuk tipe '$APP_TYPE' tidak valid atau tidak ditemukan ($APP_LOCATION)."
         exit 1
     fi
 else

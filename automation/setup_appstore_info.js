@@ -40,23 +40,26 @@ const appName = process.argv[3] || "My App";
         // Set default timeout yang panjang untuk mentoleransi loading SPA Apple
         page.setDefaultTimeout(15000);
         
-        const loginUrl = 'https://appstoreconnect.apple.com/';
+        const loginUrl = 'https://appstoreconnect.apple.com/login';
         console.log(`🌐 Membuka ${loginUrl} untuk otentikasi...`);
         await page.goto(loginUrl, { waitUntil: 'networkidle' });
         
-        console.log('⏳ Mengecek status login...');
+        console.log('⏳ Menunggu Anda mendarat di beranda (Dashboard App Store)...');
+        console.log('⏳ Jika layar meminta login, silakan isi manual (skrip menunggu hingga 2 menit).');
         try {
-            // Menunggu elemen 'My Apps' yang menandakan halaman beranda App Store Connect (sudah login)
-            await page.waitForSelector('text=My Apps', { timeout: 15000 });
+            // Tunggu sampai URL menunjuk ke appstoreconnect.apple.com dan bukan di halaman /login
+            // Ini akan mencakup /, /apps, atau halaman internal lainnya setelah login berhasil
+            await page.waitForURL((url) => {
+                return url.hostname === 'appstoreconnect.apple.com' && !url.pathname.includes('/login');
+            }, { timeout: 120000 });
+            console.log('✅ Login berhasil dideteksi!');
         } catch (e) {
-            console.log('⚠️ Halaman beranda belum termuat atau Anda belum Login.');
-            console.log('⏳ Silakan login secara manual (menunggu hingga 2 menit)...');
-            await page.waitForSelector('text=My Apps', { timeout: 120000 });
+            console.log('❌ Waktu login manual habis (timeout) atau gagal terdeteksi.');
         }
 
         if (appleId) {
             const targetUrl = `https://appstoreconnect.apple.com/apps/${appleId}/distribution/info`;
-            console.log(`➡️ Berhasil login. Melanjutkan secara otomatis ke ${targetUrl} ...`);
+            console.log(`➡️ Melanjutkan navigasi ke ${targetUrl} ...`);
             await page.goto(targetUrl, { waitUntil: 'networkidle' });
             
             console.log('⏳ Menunggu halaman pengaturan termuat...');

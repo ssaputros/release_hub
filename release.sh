@@ -323,6 +323,7 @@ fi
                 echo "10) Push Playstore Listing"
                 echo "11) Download Play Store Metadata"
                 echo "12) Update Play Console Dashboard ID"
+                echo "21) Upload AAB ke Play Store"
                 echo "13) Build IPA"
                 echo "14) Upload TestFlight"
                 echo "15) Submit TestFlight (Lewati Upload IPA)"
@@ -356,7 +357,7 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 3 "* ]] || [[ "$clean_choice" == *" 4 "* ]] || [[ "$clean_choice" == *" 7 "* ]] || [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
+                    if [[ "$clean_choice" == *" 3 "* ]] || [[ "$clean_choice" == *" 4 "* ]] || [[ "$clean_choice" == *" 7 "* ]] || [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]] || [[ "$clean_choice" == *" 21 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
                         echo "============================================================"
@@ -471,6 +472,10 @@ fi
                                     ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$current_type" || echo "❌ request_unlisted_app.rb gagal dijalankan."
                                 fi
     
+
+                                if [[ "$clean_choice" == *" 21 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/submit_playstore_version.rb" "$TARGET_ID" "$current_type" || echo "❌ submit_playstore_version.rb gagal dijalankan."
+                                fi
                                 if [[ "$clean_choice" == *" 20 "* ]]; then
                                     ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$current_type" || echo "❌ submit_appstore_version.rb gagal dijalankan."
                                 fi
@@ -489,7 +494,7 @@ fi
     fi
 fi
 
-if [ -n "$TARGET_ID" ]; then
+for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
     if command -v jq >/dev/null 2>&1 && jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
         echo "🚀 Mengeksekusi project terdaftar: $TARGET_ID"
         PROJECT=$(jq -r ".\"$TARGET_ID\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
@@ -522,6 +527,19 @@ else
     # Set Branch sama dengan ID
     BRANCH="$ID"
 
+    # Generate Branch JSON object based on TYPE
+    BRANCH_JSON="{"
+    IFS=',' read -ra ADDR <<< "$TYPE"
+    for i in "${!ADDR[@]}"; do
+        type_clean=$(echo "${ADDR[$i]}" | xargs)
+        BRANCH_JSON+="\"$type_clean\": \"$BRANCH\""
+        if [ $i -lt $((${#ADDR[@]}-1)) ]; then
+            BRANCH_JSON+=", "
+        fi
+    done
+    BRANCH_JSON+="}"
+
+
     # Membersihkan dan memformat BASE_URL
     if [ -n "$BASE_URL" ]; then
         RAW_URL=$(echo "$BASE_URL" | tr ',' ' ' | tr ' ' '\n' | grep '\.' | tail -n 1)
@@ -538,7 +556,7 @@ else
     if command -v jq >/dev/null 2>&1; then
         NEW_PROJECT=$(jq -n \
           --arg id "$ID" \
-          --arg branch "$BRANCH" \
+          --argjson branch "$BRANCH_JSON" \
           --arg pn "$PROJECT" \
           --arg r "$REGION" \
           --arg an "$APP_NAME" \
@@ -627,13 +645,7 @@ if [ "$OPT_SETUP" = true ]; then
             bash "$script_file" "$ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
             echo "============================================================"
         fi
-    done
-
-    if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
-        bash "${SCRIPT_DIR}/init_appstore.sh" "$ID" || { echo "❌ Proses init appstore gagal!"; exit 1; }
-    fi
-fi
-
+    
 # STAGE 2: BUILD
 if [ "$OPT_BUILD" = true ]; then
     if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
@@ -714,4 +726,14 @@ if [ "$OPT_UPLOAD_TESTFLIGHT" = true ]; then
         echo "⚠️ File IPA tidak ditemukan di $TARGET_DIR"
         exit 1
     fi
+
+    done
+
+
+    if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
+        bash "${SCRIPT_DIR}/init_appstore.sh" "$ID" || { echo "❌ Proses init appstore gagal!"; exit 1; }
+    fi
 fi
+
+
+done

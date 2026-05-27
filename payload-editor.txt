@@ -1,0 +1,31 @@
+{
+  "ziopakartek": {
+    "Branch": "ziopakartek",
+    "Play Console Dashboard": {
+      "Approval Apps": "",
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Zio Pakartek Profesi",
+      "Region": "Indonesia",
+      "App Name": {
+        "Approval Apps": "ZPP HRIS",
+        "HRM Apps": "ZPP HRIS"
+      },
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://zio-pakartek.hashmicro.co",
+      "Database": "zio-pakartek-live",
+      "Icon": "https://drive.google.com/open?id=1txmDI-HBLJ-aoBk0fWa8huxJX7rTjPAp",
+      "Notes": "LMS, Training, Career Transition"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.eva.ziopakartek",
+      "HRM Apps": "com.hashmicro.eva.ziopakartek"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.eva.ziopakartek",
+      "HRM Apps": "com.hashmicro.eva.ziopakartek"
+    }
+  }
+}
