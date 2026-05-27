@@ -40,21 +40,27 @@ const appName = process.argv[3] || "My App";
         // Set default timeout yang panjang untuk mentoleransi loading SPA Apple
         page.setDefaultTimeout(15000);
         
-        let url = 'https://appstoreconnect.apple.com/';
-        if (appleId) {
-            url = `https://appstoreconnect.apple.com/apps/${appleId}/distribution/info`;
+        const loginUrl = 'https://appstoreconnect.apple.com/';
+        console.log(`🌐 Membuka ${loginUrl} untuk otentikasi...`);
+        await page.goto(loginUrl, { waitUntil: 'networkidle' });
+        
+        console.log('⏳ Mengecek status login...');
+        try {
+            // Menunggu elemen 'My Apps' yang menandakan halaman beranda App Store Connect (sudah login)
+            await page.waitForSelector('text=My Apps', { timeout: 15000 });
+        } catch (e) {
+            console.log('⚠️ Halaman beranda belum termuat atau Anda belum Login.');
+            console.log('⏳ Silakan login secara manual (menunggu hingga 2 menit)...');
+            await page.waitForSelector('text=My Apps', { timeout: 120000 });
         }
 
-        console.log(`🌐 Membuka ${url} ...`);
-        await page.goto(url, { waitUntil: 'networkidle' });
-        
-        console.log('⏳ Menunggu halaman dimuat...');
-        try {
-            await page.waitForSelector('text=App Privacy', { timeout: 15000 });
-        } catch (e) {
-            console.log('⚠️ Halaman belum termuat sepenuhnya. Anda mungkin perlu Login terlebih dahulu.');
-            console.log('⏳ Menunggu login manual (waktu tunggu hingga 2 menit)...');
-            await page.waitForSelector('text=App Privacy', { timeout: 120000 });
+        if (appleId) {
+            const targetUrl = `https://appstoreconnect.apple.com/apps/${appleId}/distribution/info`;
+            console.log(`➡️ Berhasil login. Melanjutkan secara otomatis ke ${targetUrl} ...`);
+            await page.goto(targetUrl, { waitUntil: 'networkidle' });
+            
+            console.log('⏳ Menunggu halaman pengaturan termuat...');
+            await page.waitForSelector('text=App Privacy', { timeout: 30000 });
         }
         
         console.log("⚙️ Mengisi Content Rights & Age Ratings...");

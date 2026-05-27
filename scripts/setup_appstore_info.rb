@@ -81,7 +81,7 @@ unless app
 end
 
 apple_id = app.id
-app_store_connect_url = "https://appstoreconnect.apple.com/apps/#{apple_id}/appstore/info"
+app_store_connect_url = "https://appstoreconnect.apple.com/apps/#{apple_id}/distribution/info"
 
 puts "\n✅ Berhasil mengambil data aplikasi dari App Store Connect!"
 puts "Apple ID      : #{apple_id}"

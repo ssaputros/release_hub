@@ -197,96 +197,45 @@ PROJECT_FILE="${SCRIPT_DIR}/projects.json"
 
 if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$BUILD_ONLY_ID" ]; then
     if [ -s "$PROJECT_FILE" ] && command -v jq >/dev/null 2>&1; then
-        local_input=""
-        local_char=""
-        
-        # Ekstrak data project HANYA SEKALI di luar loop untuk menghindari lag (debounce issue)
+        # Ekstrak data project HANYA SEKALI
         projects_data=$(jq -r 'to_entries | .[] | "\(.key)|\(.value.Project["Project Name"])"' "$PROJECT_FILE")
         
-        tput civis
+        echo "============================================================"
+        echo "📋 DAFTAR PROJECT"
+        echo "============================================================"
         
-        while true; do
-            tput clear
-            
-            echo "============================================================"
-            echo "📋 DAFTAR PROJECT"
-            echo "============================================================"
-            
-            match_count=0
-            first_match=""
-            exact_match=""
-            no=1
-            
-            input_lower=$(echo "$local_input" | tr 'A-Z' 'a-z')
-            
-            while IFS="|" read -r pid pname; do
-                pid_lower=$(echo "$pid" | tr 'A-Z' 'a-z')
-                pname_lower=$(echo "$pname" | tr 'A-Z' 'a-z')
-                
-                if [[ -z "$input_lower" || "$no" == "$input_lower"* || "$pid_lower" == *"$input_lower"* || "$pname_lower" == *"$input_lower"* ]]; then
-                    printf "%-3s %-20s %s\n" "$no." "$pid" "$pname"
-                    if [ $match_count -eq 0 ]; then
-                        first_match="$pid"
-                    fi
-                    if [[ "$no" == "$input_lower" || "$pid_lower" == "$input_lower" ]]; then
-                        exact_match="$pid"
-                    fi
-                    ((match_count++))
-                fi
-                ((no++))
-            done <<< "$projects_data"
-            
-            echo "------------------------------------------------------------"
-            echo -n "Masukkan Project ID (Tab untuk auto-complete): $local_input"
-            
-            # Mulai baca input pertama (blocking)
-            IFS= read -r -s -n 1 local_char
-            
-            # Loop kecil untuk memproses input cepat / debounce
-            while true; do
-                if [[ -z "$local_char" ]]; then
-                    if [ -n "$exact_match" ]; then
-                        local_input="$exact_match"
-                    elif [ -n "$first_match" ]; then
-                        local_input="$first_match"
-                    fi
-                    echo
-                    break 2
-                elif [[ "$local_char" == $'\x09' ]]; then
-                    if [ -n "$exact_match" ]; then
-                        local_input="$exact_match"
-                    elif [ -n "$first_match" ]; then
-                        local_input="$first_match"
-                    fi
-                elif [[ "$local_char" == $'\x7f' || "$local_char" == $'\b' || "$local_char" == $'\177' ]]; then
-                    if [ ${#local_input} -gt 0 ]; then
-                        local_input="${local_input%?}"
-                    fi
-                elif [[ "$local_char" == $'\e' ]]; then
-                    # Deteksi sequence seperti Delete (\e[3~) atau Arrow Keys
-                    if IFS= read -r -s -n 2 -t 0.05 seq; then
-                        if [[ "$seq" == "[3" ]]; then
-                            IFS= read -r -s -n 1 -t 0.05 seq2
-                            if [[ "$seq2" == "~" ]] && [ ${#local_input} -gt 0 ]; then
-                                local_input="${local_input%?}"
-                            fi
-                        fi
-                    fi
-                else
-                    # Karakter biasa
-                    if [[ "$local_char" == [[:print:]] ]]; then
-                        local_input="${local_input}${local_char}"
-                    fi
-                fi
-                
-                # Debounce: Coba baca input selanjutnya. Jika tidak ada yang diketik dalam 0.3s, keluar loop dan render ulang
-                if ! IFS= read -r -s -n 1 -t 0.3 local_char; then
-                    break
+        # Simpan keys dalam array map index -> project_id
+        declare -a PROJ_MAP
+        no=1
+        while IFS="|" read -r pid pname; do
+            printf "%-3s %-20s %s\n" "$no)" "$pid" "$pname"
+            PROJ_MAP[$no]="$pid"
+            ((no++))
+        done <<< "$projects_data"
+        
+        echo "------------------------------------------------------------"
+        echo -n "Masukkan nomor project (pisahkan dengan spasi/koma, misal: 2 4 5) atau 'all': "
+        read -r project_input
+        
+        SELECTED_TARGETS=()
+        
+        if [[ "$project_input" == "all" ]]; then
+            for idx in $(seq 1 $((no-1))); do
+                SELECTED_TARGETS+=("${PROJ_MAP[$idx]}")
+            done
+        else
+            clean_proj_input=$(echo "$project_input" | tr ',' ' ')
+            for c in $clean_proj_input; do
+                if [ -n "${PROJ_MAP[$c]}" ]; then
+                    SELECTED_TARGETS+=("${PROJ_MAP[$c]}")
                 fi
             done
-        done
+        fi
         
-        tput cnorm
+        if [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
+            echo "❌ Tidak ada project yang dipilih."
+            exit 1
+        fi
         
 # Default flags
 OPT_SETUP=false
@@ -301,93 +250,89 @@ if [ "$UPLOAD_ONLY_MODE" = true ]; then
     else
         OPT_UPLOAD_DRIVE=true
     fi
-    TARGET_ID="${UPLOAD_ONLY_ID}"
+    SELECTED_TARGETS=("${UPLOAD_ONLY_ID}")
 elif [ "$BUILD_ONLY_MODE" = true ]; then
     OPT_BUILD=true
-    TARGET_ID="${BUILD_ONLY_ID}"
+    SELECTED_TARGETS=("${BUILD_ONLY_ID}")
 elif [ -n "$RUN_ID" ]; then
     OPT_SETUP=true
     OPT_BUILD=true
     OPT_UPLOAD_DRIVE=true
-    TARGET_ID="$RUN_ID"
+    SELECTED_TARGETS=("$RUN_ID")
 fi
-        if [ -n "$local_input" ]; then
-            if [ "$UPLOAD_ONLY_MODE" = true ]; then
-                TARGET_ID="$local_input"
-            elif [ "$BUILD_ONLY_MODE" = true ]; then
-                TARGET_ID="$local_input"
-            else
-                TARGET_ID="$local_input"
-                tput clear
-                
-                # Cek apakah project memiliki lebih dari satu Type (Tanyakan sebelum pilih aksi)
-                if command -v jq >/dev/null 2>&1 && jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
-                    INTERACTIVE_TYPE=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
-                    if [[ "$INTERACTIVE_TYPE" == *","* ]]; then
-                        IFS=',' read -ra ALL_TYPES <<< "$INTERACTIVE_TYPE"
-                        echo "============================================================"
-                        echo "🗂️ PROJECT INI MEMILIKI BEBERAPA TIPE APLIKASI"
-                        echo "============================================================"
-                        echo "1) Full (Semua Tipe: $INTERACTIVE_TYPE)"
-                        
-                        idx=2
-                        for t in "${ALL_TYPES[@]}"; do
-                            t_clean=$(echo "$t" | xargs)
-                            echo "$idx) $t_clean"
-                            ((idx++))
-                        done
-                        echo "------------------------------------------------------------"
-                        echo -n "Pilih tipe yang ingin dieksekusi (bisa lebih dari satu, pisahkan spasi, misal: 2 3): "
-                        read -r type_choice
 
-                        if [[ "$type_choice" != "1" && -n "$type_choice" ]]; then
-                            NEW_TYPE=""
-                            choices=$(echo "$type_choice" | tr ',' ' ' | xargs)
-                            for c in $choices; do
-                                if [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge 2 ] && [ "$c" -lt "$idx" ]; then
-                                    selected_idx=$((c - 2))
-                                    t_clean=$(echo "${ALL_TYPES[$selected_idx]}" | xargs)
-                                    if [ -n "$NEW_TYPE" ]; then
-                                        NEW_TYPE="${NEW_TYPE}, ${t_clean}"
-                                    else
-                                        NEW_TYPE="${t_clean}"
-                                    fi
+        for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
+            # Cek apakah project memiliki lebih dari satu Type (Tanyakan sebelum pilih aksi)
+            if command -v jq >/dev/null 2>&1 && jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
+                INTERACTIVE_TYPE=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+                if [[ "$INTERACTIVE_TYPE" == *","* ]]; then
+                    tput clear
+                    IFS=',' read -ra ALL_TYPES <<< "$INTERACTIVE_TYPE"
+                    echo "============================================================"
+                    echo "🗂️ PROJECT INI MEMILIKI BEBERAPA TIPE APLIKASI: $TARGET_ID"
+                    echo "============================================================"
+                    echo "1) Full (Semua Tipe: $INTERACTIVE_TYPE)"
+                    
+                    idx=2
+                    for t in "${ALL_TYPES[@]}"; do
+                        t_clean=$(echo "$t" | xargs)
+                        echo "$idx) $t_clean"
+                        ((idx++))
+                    done
+                    echo "------------------------------------------------------------"
+                    echo -n "Pilih tipe yang ingin dieksekusi untuk $TARGET_ID (pisahkan spasi, misal: 2 3): "
+                    read -r type_choice
+
+                    if [[ "$type_choice" != "1" && -n "$type_choice" ]]; then
+                        NEW_TYPE=""
+                        choices=$(echo "$type_choice" | tr ',' ' ' | xargs)
+                        for c in $choices; do
+                            if [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge 2 ] && [ "$c" -lt "$idx" ]; then
+                                selected_idx=$((c - 2))
+                                t_clean=$(echo "${ALL_TYPES[$selected_idx]}" | xargs)
+                                if [ -n "$NEW_TYPE" ]; then
+                                    NEW_TYPE="${NEW_TYPE}, ${t_clean}"
+                                else
+                                    NEW_TYPE="${t_clean}"
                                 fi
-                            done
-                            
-                            if [ -n "$NEW_TYPE" ]; then
-                                export FILTERED_TYPE="$NEW_TYPE"
                             fi
+                        done
+                        
+                        if [ -n "$NEW_TYPE" ]; then
+                            # Dynamic variable export for this target
+                            clean_target_id=$(echo "$TARGET_ID" | tr '-' '_')
+                            eval "export FILTERED_TYPE_${clean_target_id}=\"\$NEW_TYPE\""
                         fi
-                        tput clear
                     fi
                 fi
-
+            fi
+        done
+        tput clear
                 echo "============================================================"
-                echo "🛠️ PILIH AKSI UNTUK: $local_input"
+                echo "🛠️ PILIH AKSI UNTUK: ${#SELECTED_TARGETS[@]} Project(s) Terpilih"
                 echo "============================================================"
-                echo " 1) Full (Semua proses)"
+                echo " 1) Full (Semua proses Utama)"
                 echo " 2) Setup Konfigurasi"
-                echo " 3) Build APK & AAB"
-                echo " 4) Build IPA"
-                echo " 5) Upload Drive"
-                echo " 6) Upload TestFlight"
-                echo " 7) Submit TestFlight (Lewati Upload IPA)"
-                echo " 8) Create Playstore App"
-                echo " 9) Setup Playstore App Information"
-                echo "10) Setup Store Listing"
-                echo "11) Record Playwright UI"
+                echo " 3) Bump Version"
+                echo " 4) Record Playwright UI"
+                echo " 5) Upload APK & IPA ke Google Drive"
+                echo " 6) Build APK & AAB"
+                echo " 7) Create Playstore App"
+                echo " 8) Setup Playstore App Information"
+                echo " 9) Setup Store Listing"
+                echo "10) Push Playstore Listing"
+                echo "11) Download Play Store Metadata"
                 echo "12) Update Play Console Dashboard ID"
-                echo "13) Bump Version"
-                echo "14) Push Playstore Listing"
-                echo "15) Download App Store Metadata"
-                echo "16) Push App Store Metadata"
-                echo "17) Download Play Store Metadata"
-                echo "18) Setup App Store Info"
+                echo "13) Build IPA"
+                echo "14) Upload TestFlight"
+                echo "15) Submit TestFlight (Lewati Upload IPA)"
+                echo "16) Setup App Store Info"
+                echo "17) Push App Store Metadata"
+                echo "18) Download App Store Metadata"
                 echo "19) Request Unlisted App Distribution"
                 echo "20) Submit for App Review"
                 echo "------------------------------------------------------------"
-                echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
+                echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 6 9 13): "
                 read -r action_choice
 
                 # Ganti koma dengan spasi dan tambahkan spasi di awal/akhir agar pengecekan angka lebih aman (mencegah 10 terbaca sebagai 1)
@@ -402,22 +347,22 @@ fi
                     OPT_UPLOAD_TESTFLIGHT=true
                 else
                     if [[ "$clean_choice" == *" 2 "* ]]; then OPT_SETUP=true; fi
-                    if [[ "$clean_choice" == *" 3 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_APK=true; fi
-                    if [[ "$clean_choice" == *" 4 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_IPA=true; fi
+                    if [[ "$clean_choice" == *" 6 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_APK=true; fi
+                    if [[ "$clean_choice" == *" 13 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_IPA=true; fi
                     if [[ "$clean_choice" == *" 5 "* ]]; then OPT_UPLOAD_DRIVE=true; fi
-                    if [[ "$clean_choice" == *" 6 "* ]]; then OPT_UPLOAD_TESTFLIGHT=true; fi
-                    if [[ "$clean_choice" == *" 7 "* ]]; then 
+                    if [[ "$clean_choice" == *" 14 "* ]]; then OPT_UPLOAD_TESTFLIGHT=true; fi
+                    if [[ "$clean_choice" == *" 15 "* ]]; then 
                         OPT_UPLOAD_TESTFLIGHT=true
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
+                    if [[ "$clean_choice" == *" 3 "* ]] || [[ "$clean_choice" == *" 4 "* ]] || [[ "$clean_choice" == *" 7 "* ]] || [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
                         echo "============================================================"
                         
                         # Hanya install dan masuk ke folder automation jika memilih opsi Playwright
-                        if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]]; then
+                        if [[ "$clean_choice" == *" 4 "* ]] || [[ "$clean_choice" == *" 7 "* ]] || [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 12 "* ]]; then
                             cd "${SCRIPT_DIR}/automation" || exit 1
                             if [ ! -d "node_modules" ]; then
                                 echo "📦 Menginstal dependensi automation (Playwright)..."
@@ -431,97 +376,105 @@ fi
                             fi
                         fi
                         
-                        if [[ "$clean_choice" == *" 12 "* ]]; then
-                            node update_dashboard_id.js "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
-                        fi
-                        
-                        if [[ "$clean_choice" == *" 8 "* ]]; then
-                            if node create_app.js "$TARGET_ID"; then
-                                if [[ "$clean_choice" != *" 9 "* ]]; then
-                                    echo "🚀 Otomatis melanjutkan ke Setup Playstore App Information (Langkah 9)..."
-                                    node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
-                                fi
-                            else
-                                echo "❌ create_app.js gagal dijalankan."
-                            fi
-                        fi
-                        
-                        if [[ "$clean_choice" == *" 9 "* ]]; then
-                            node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
-                        fi
-
-                        if [[ "$clean_choice" == *" 11 "* ]]; then
-                            echo "🎥 Membuka Playwright Inspector..."
-                            npm run record
-                        fi
-                        
-                        # Kembali ke direktori utama
                         cd "${SCRIPT_DIR}" || exit 1
-                        
-                        if [ -z "$FILTERED_TYPE" ]; then
-                            ACTIVE_TYPES=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
-                        else
-                            ACTIVE_TYPES="$FILTERED_TYPE"
-                        fi
-                        IFS=',' read -ra ACTIVE_TYPES_ARR <<< "$ACTIVE_TYPES"
-                        
-                        for current_type in "${ACTIVE_TYPES_ARR[@]}"; do
-                            current_type=$(echo "$current_type" | xargs)
-                            
-                            if [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 10 "* ]]; then
-                                echo "============================================================"
-                                echo "🚀 MENJALANKAN SETUP UNTUK: $current_type"
-                                echo "============================================================"
-                            fi
 
-                            if [[ "$clean_choice" == *" 10 "* ]]; then
-                                echo "============================================================"
-                                echo "🛠️ PILIH METODE SETUP STORE LISTING"
-                                echo "============================================================"
-                                echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
-                                echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
-                                echo "------------------------------------------------------------"
-                                echo -n "Pilihan Anda (default: 1): "
-                                read -r method_choice
-                                
-                                if [[ "$method_choice" == "2" ]]; then
-                                    node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                        for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
+                            echo "============================================================"
+                            echo "🚀 MEMPROSES PROJECT: $TARGET_ID"
+                            echo "============================================================"
+                            
+                            if [[ "$clean_choice" == *" 12 "* ]]; then
+                                node update_dashboard_id.js "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
+                            fi
+                            
+                            if [[ "$clean_choice" == *" 7 "* ]]; then
+                                if node create_app.js "$TARGET_ID"; then
+                                    if [[ "$clean_choice" != *" 8 "* ]]; then
+                                        echo "🚀 Otomatis melanjutkan ke Setup Playstore App Information (Langkah 8)..."
+                                        node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
+                                    fi
                                 else
+                                    echo "❌ create_app.js gagal dijalankan."
+                                fi
+                            fi
+                            
+                            if [[ "$clean_choice" == *" 8 "* ]]; then
+                                node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
+                            fi
+    
+                            if [[ "$clean_choice" == *" 4 "* ]]; then
+                                echo "🎥 Membuka Playwright Inspector..."
+                                npm run record
+                            fi
+                            
+                            
+                            clean_target_id=$(echo "$TARGET_ID" | tr '-' '_')
+                            dynamic_type=$(eval echo "\$FILTERED_TYPE_${clean_target_id}")
+                            if [ -z "$dynamic_type" ]; then
+                                ACTIVE_TYPES=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+                            else
+                                ACTIVE_TYPES="$dynamic_type"
+                            fi
+                            IFS=',' read -ra ACTIVE_TYPES_ARR <<< "$ACTIVE_TYPES"
+                            
+                            for current_type in "${ACTIVE_TYPES_ARR[@]}"; do
+                                current_type=$(echo "$current_type" | xargs)
+                                
+                                if [[ "$clean_choice" == *" 3 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
+                                    echo "============================================================"
+                                    echo "🚀 MENJALANKAN SETUP UNTUK: $current_type"
+                                    echo "============================================================"
+                                fi
+    
+                                if [[ "$clean_choice" == *" 9 "* ]]; then
+                                    echo "============================================================"
+                                    echo "🛠️ PILIH METODE SETUP STORE LISTING"
+                                    echo "============================================================"
+                                    echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
+                                    echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
+                                    echo "------------------------------------------------------------"
+                                    echo -n "Pilihan Anda (default: 1): "
+                                    read -r method_choice
+                                    
+                                    if [[ "$method_choice" == "2" ]]; then
+                                        node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                                    else
+                                        ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
+                                    fi
+                                fi
+    
+                                if [[ "$clean_choice" == *" 3 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$current_type" || echo "❌ bump_version.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 10 "* ]]; then
                                     ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
                                 fi
-                            fi
-
-                            if [[ "$clean_choice" == *" 13 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$current_type" || echo "❌ bump_version.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 14 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 15 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_appstore_metadata.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 16 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 17 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_playstore_metadata.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 18 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$current_type" || echo "❌ setup_appstore_info.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 19 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$current_type" || echo "❌ request_unlisted_app.rb gagal dijalankan."
-                            fi
-
-                            if [[ "$clean_choice" == *" 20 "* ]]; then
-                                ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$current_type" || echo "❌ submit_appstore_version.rb gagal dijalankan."
-                            fi
+    
+                                if [[ "$clean_choice" == *" 18 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_appstore_metadata.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 17 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 11 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_playstore_metadata.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 16 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$current_type" || echo "❌ setup_appstore_info.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 19 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$current_type" || echo "❌ request_unlisted_app.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 20 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$current_type" || echo "❌ submit_appstore_version.rb gagal dijalankan."
+                                fi
+                            done
                         done
                         exit 0
                     fi
@@ -531,11 +484,8 @@ fi
                     echo "❌ Pilihan tidak valid."
                     exit 1
                 fi
-            fi
-        else
-            echo "❌ Batal memilih project."
-            exit 0
-        fi
+
+
     fi
 fi
 
