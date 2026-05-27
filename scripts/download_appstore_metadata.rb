@@ -97,13 +97,8 @@ if app_type.nil? || app_type.empty?
   end
 end
 
-# Resolve package name (used as default Bundle ID)
-config = File.exist?(config_path) ? JSON.parse(File.read(config_path)) : {}
-prefix = "com.example"
-if config['types'] && config['types'][app_type] && config['types'][app_type]['prefix']
-  prefix = config['types'][app_type]['prefix']
-end
-default_bundle_id = "#{prefix}.#{run_id}"
+# Resolve default Bundle ID from projects.json
+default_bundle_id = app_data['Bundle ID'][app_type]
 
 # Input Bundle ID
 puts "\n============================================================"

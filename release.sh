@@ -16,6 +16,26 @@ TESTFLIGHT_MODE=false
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
+# Load .env variables automatically
+if [ -f "${SCRIPT_DIR}/.env" ]; then
+    set -a
+    source "${SCRIPT_DIR}/.env"
+    set +a
+    
+    # Map APPLE_ID_USERNAME to FASTLANE_USER for spaceship
+    if [ -n "$APPLE_ID_USERNAME" ]; then
+        export FASTLANE_USER="$APPLE_ID_USERNAME"
+    fi
+    
+    # Map TEAM_ID and ITC_TEAM_ID for spaceship to avoid Team prompts
+    if [ -n "$TEAM_ID" ]; then
+        export FASTLANE_TEAM_ID="$TEAM_ID"
+    fi
+    if [ -n "$ITC_TEAM_ID" ]; then
+        export FASTLANE_ITC_TEAM_ID="$ITC_TEAM_ID"
+    fi
+fi
+
 manage_jobs() {
     local schedulers_file="${SCRIPT_DIR}/.schedulers"
     if [ ! -s "$schedulers_file" ]; then
@@ -346,15 +366,15 @@ fi
                 echo "============================================================"
                 echo "🛠️ PILIH AKSI UNTUK: $local_input"
                 echo "============================================================"
-                echo "1) Full (Semua proses)"
-                echo "2) Setup Konfigurasi"
-                echo "3) Build APK & AAB"
-                echo "4) Build IPA"
-                echo "5) Upload Drive"
-                echo "6) Upload TestFlight"
-                echo "7) Submit TestFlight (Lewati Upload IPA)"
-                echo "8) Create Playstore App"
-                echo "9) Setup Playstore App Information"
+                echo " 1) Full (Semua proses)"
+                echo " 2) Setup Konfigurasi"
+                echo " 3) Build APK & AAB"
+                echo " 4) Build IPA"
+                echo " 5) Upload Drive"
+                echo " 6) Upload TestFlight"
+                echo " 7) Submit TestFlight (Lewati Upload IPA)"
+                echo " 8) Create Playstore App"
+                echo " 9) Setup Playstore App Information"
                 echo "10) Setup Store Listing"
                 echo "11) Record Playwright UI"
                 echo "12) Update Play Console Dashboard ID"
@@ -363,6 +383,8 @@ fi
                 echo "15) Download App Store Metadata"
                 echo "16) Push App Store Metadata"
                 echo "17) Download Play Store Metadata"
+                echo "18) Setup App Store Info"
+                echo "19) Request Unlisted App Distribution"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
                 read -r action_choice
@@ -388,7 +410,7 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]]; then
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
                         echo "============================================================"
@@ -427,23 +449,6 @@ fi
                             node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
                         fi
 
-                        if [[ "$clean_choice" == *" 10 "* ]]; then
-                            echo "============================================================"
-                            echo "🛠️ PILIH METODE SETUP STORE LISTING"
-                            echo "============================================================"
-                            echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
-                            echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
-                            echo "------------------------------------------------------------"
-                            echo -n "Pilihan Anda (default: 1): "
-                            read -r method_choice
-                            
-                            if [[ "$method_choice" == "2" ]]; then
-                                node runner_store_listing.js "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
-                            else
-                                ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ update_store_listing.rb gagal dijalankan."
-                            fi
-                        fi
-
                         if [[ "$clean_choice" == *" 11 "* ]]; then
                             echo "🎥 Membuka Playwright Inspector..."
                             npm run record
@@ -452,25 +457,67 @@ fi
                         # Kembali ke direktori utama
                         cd "${SCRIPT_DIR}" || exit 1
                         
-                        if [[ "$clean_choice" == *" 13 "* ]]; then
-                            ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" || echo "❌ bump_version.rb gagal dijalankan."
+                        if [ -z "$FILTERED_TYPE" ]; then
+                            ACTIVE_TYPES=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+                        else
+                            ACTIVE_TYPES="$FILTERED_TYPE"
                         fi
+                        IFS=',' read -ra ACTIVE_TYPES_ARR <<< "$ACTIVE_TYPES"
+                        
+                        for current_type in "${ACTIVE_TYPES_ARR[@]}"; do
+                            current_type=$(echo "$current_type" | xargs)
+                            
+                            if [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 10 "* ]]; then
+                                echo "============================================================"
+                                echo "🚀 MENJALANKAN SETUP UNTUK: $current_type"
+                                echo "============================================================"
+                            fi
 
-                        if [[ "$clean_choice" == *" 14 "* ]]; then
-                            ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ update_store_listing.rb gagal dijalankan."
-                        fi
+                            if [[ "$clean_choice" == *" 10 "* ]]; then
+                                echo "============================================================"
+                                echo "🛠️ PILIH METODE SETUP STORE LISTING"
+                                echo "============================================================"
+                                echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
+                                echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
+                                echo "------------------------------------------------------------"
+                                echo -n "Pilihan Anda (default: 1): "
+                                read -r method_choice
+                                
+                                if [[ "$method_choice" == "2" ]]; then
+                                    node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                                else
+                                    ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
+                                fi
+                            fi
 
-                        if [[ "$clean_choice" == *" 15 "* ]]; then
-                            ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ download_appstore_metadata.rb gagal dijalankan."
-                        fi
+                            if [[ "$clean_choice" == *" 13 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$current_type" || echo "❌ bump_version.rb gagal dijalankan."
+                            fi
 
-                        if [[ "$clean_choice" == *" 16 "* ]]; then
-                            ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
-                        fi
+                            if [[ "$clean_choice" == *" 14 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
+                            fi
 
-                        if [[ "$clean_choice" == *" 17 "* ]]; then
-                            ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$FILTERED_TYPE" || echo "❌ download_playstore_metadata.rb gagal dijalankan."
-                        fi
+                            if [[ "$clean_choice" == *" 15 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_appstore_metadata.rb gagal dijalankan."
+                            fi
+
+                            if [[ "$clean_choice" == *" 16 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
+                            fi
+
+                            if [[ "$clean_choice" == *" 17 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_playstore_metadata.rb gagal dijalankan."
+                            fi
+
+                            if [[ "$clean_choice" == *" 18 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$current_type" || echo "❌ setup_appstore_info.rb gagal dijalankan."
+                            fi
+
+                            if [[ "$clean_choice" == *" 19 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$current_type" || echo "❌ request_unlisted_app.rb gagal dijalankan."
+                            fi
+                        done
                         exit 0
                     fi
                 fi

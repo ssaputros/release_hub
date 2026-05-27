@@ -7,27 +7,32 @@ function getAppMeta(projectId, appName, appType, configPath) {
         primaryType = appType.split(',')[0].trim();
     }
     
-    let prefix = "com.example";
-    if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (config.types && config.types[primaryType] && config.types[primaryType].prefix) {
-            prefix = config.types[primaryType].prefix;
+    let finalPackageName = "";
+    let finalAppName = appName || "";
+    
+    const projectsPath = path.join(__dirname, '../projects.json');
+    if (fs.existsSync(projectsPath)) {
+        const projects = JSON.parse(fs.readFileSync(projectsPath, 'utf8'));
+        if (projects[projectId]) {
+            const pData = projects[projectId];
+            if (pData['Package ID'] && pData['Package ID'][primaryType]) {
+                finalPackageName = pData['Package ID'][primaryType];
+            }
+            if (pData['Project'] && pData['Project']['App Name'] && pData['Project']['App Name'][primaryType]) {
+                finalAppName = pData['Project']['App Name'][primaryType];
+            }
         }
     }
     
-    let finalPackageName = `${prefix}.${projectId}`;
-    let finalAppName = appName || "";
-    
-    if (primaryType === "Approval Apps") {
-        // Hapus HR, HRIS, HRM (case insensitive)
-        finalAppName = finalAppName.replace(/\b(hris|hr|hrm)\b/ig, '').trim();
-        // Bersihkan spasi berlebih
-        finalAppName = finalAppName.replace(/\s+/g, ' ');
-        
-        // Tambahkan imbuhan Approval jika belum ada
-        if (!finalAppName.toLowerCase().includes('approval')) {
-            finalAppName = `${finalAppName} Approval`.trim();
+    if (!finalPackageName) {
+        let prefix = "com.example";
+        if (fs.existsSync(configPath)) {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            if (config.types && config.types[primaryType] && config.types[primaryType].prefix) {
+                prefix = config.types[primaryType].prefix;
+            }
         }
+        finalPackageName = `${prefix}.${projectId}`;
     }
     
     return {

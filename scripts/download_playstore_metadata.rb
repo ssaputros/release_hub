@@ -105,13 +105,8 @@ if app_type.nil? || app_type.empty?
   end
 end
 
-# Resolve package name (used as default Package Name)
-config = File.exist?(config_path) ? JSON.parse(File.read(config_path)) : {}
-prefix = "com.example"
-if config['types'] && config['types'][app_type] && config['types'][app_type]['prefix']
-  prefix = config['types'][app_type]['prefix']
-end
-default_package_name = "#{prefix}.#{run_id}"
+# Resolve package name from projects.json
+default_package_name = app_data['Package ID'][app_type]
 
 # Input Package Name
 puts "\n============================================================"

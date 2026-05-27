@@ -103,13 +103,8 @@ if app_type.nil? || app_type.empty?
   end
 end
 
-# Resolve package name
-config = File.exist?(config_path) ? JSON.parse(File.read(config_path)) : {}
-prefix = "com.example"
-if config['types'] && config['types'][app_type] && config['types'][app_type]['prefix']
-  prefix = config['types'][app_type]['prefix']
-end
-package_name = "#{prefix}.#{run_id}"
+# Resolve package name from projects.json
+package_name = app_data['Package ID'][app_type]
 
 # Normalize directory type name (HRM Apps -> Hrm Apps)
 folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
@@ -176,12 +171,7 @@ locales = existing_locales.empty? ? ["en-US", "id"] : existing_locales
 
 # 6. Apply project custom values dynamically
 puts "⚙️ Menyelaraskan informasi proyek (Title & Icon) ke dalam temporary metadata..."
-app_name = app_data['Project']['App Name'] || "My App"
-if app_type == "Approval Apps"
-  app_name = app_name.gsub(/\b(hris|hr|hrm)\b/i, '').strip
-  app_name = app_name.gsub(/\s+/, ' ')
-  app_name = "#{app_name} Approval".strip unless app_name.downcase.include?('approval')
-end
+app_name = app_data['Project']['App Name'][app_type] || "My App"
 project_icon_path = File.join(project_root, "icon", "icon.png")
 
 locales.each do |locale|

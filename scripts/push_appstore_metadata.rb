@@ -101,13 +101,8 @@ if app_type.nil? || app_type.empty?
   end
 end
 
-# Resolve package name (used as default Bundle ID)
-config = File.exist?(config_path) ? JSON.parse(File.read(config_path)) : {}
-prefix = "com.example"
-if config['types'] && config['types'][app_type] && config['types'][app_type]['prefix']
-  prefix = config['types'][app_type]['prefix']
-end
-default_bundle_id = "#{prefix}.#{run_id}"
+# Resolve default Bundle ID from projects.json
+default_bundle_id = app_data['Bundle ID'][app_type]
 
 # Input Bundle ID
 puts "\n============================================================"
@@ -218,12 +213,7 @@ end
 
 # 6. Apply project custom values dynamically
 puts "⚙️ Menyelaraskan informasi proyek (Name & Keywords) ke dalam temporary metadata..."
-app_name = app_data['Project']['App Name'] || "My App"
-if app_type == "Approval Apps"
-  app_name = app_name.gsub(/\b(hris|hr|hrm)\b/i, '').strip
-  app_name = app_name.gsub(/\s+/, ' ')
-  app_name = "#{app_name} Approval".strip unless app_name.downcase.include?('approval')
-end
+app_name = app_data['Project']['App Name'][app_type] || "My App"
 
 # Force metadata and screenshots to English (en-US) only
 puts "🌍 Memaksa bahasa metadata ke English (en-US)..."

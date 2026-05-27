@@ -62,3 +62,4 @@ credentials/*
 # Ignore files inside tmp but keep the folder
 tmp/*
 !tmp/.gitkeep
+unlisted_requests.log

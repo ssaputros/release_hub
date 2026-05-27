@@ -86,7 +86,7 @@ end
 
 current_version = version_match[1]
 puts "\n============================================================"
-puts "📈 BUMP VERSION FOR: #{app_data['Project']['App Name']}"
+puts "📈 BUMP VERSION FOR: #{app_data['Project']['App Name'][app_type]}"
 puts "============================================================"
 puts "Lokasi Project : #{project_location}"
 puts "Versi Saat Ini : #{current_version}"
