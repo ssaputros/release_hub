@@ -87,14 +87,16 @@ puts "\n✅ Berhasil mengambil data aplikasi dari App Store Connect!"
 puts "Apple ID      : #{apple_id}"
 
 puts "\n============================================================"
-puts "📋 INSTRUKSI SELANJUTNYA"
+puts "📋 MENJALANKAN PLAYWRIGHT INSPECTOR"
 puts "============================================================"
-puts "Browser akan terbuka otomatis ke Halaman Informasi App Store."
-puts "-> Lengkapi data yang kurang (seperti Content Rights, Age Rating, Encryption)."
-puts "-> Pastikan untuk menyimpan (Save) perubahan Anda."
+puts "Browser Chrome automation akan segera terbuka dengan sesi Anda."
+puts "-> Tunggu Playwright Inspector muncul."
+puts "-> Klik RECORD dan mulailah melengkapi data App Store Info Anda."
+puts "-> Setelah selesai merekam dan mengisi form, silakan tutup browser."
 puts "============================================================"
 
 sleep(2)
-puts "🌐 Membuka App Store Connect..."
-system("open '#{app_store_connect_url}'")
+playwright_script = File.join(project_root, "automation", "setup_appstore_info.js")
+system("node '#{playwright_script}' '#{apple_id}' '#{app_name}'")
+
 puts "\n✨ Selesai!"
