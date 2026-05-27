@@ -385,6 +385,7 @@ fi
                 echo "17) Download Play Store Metadata"
                 echo "18) Setup App Store Info"
                 echo "19) Request Unlisted App Distribution"
+                echo "20) Submit for App Review"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 3 5 12): "
                 read -r action_choice
@@ -410,7 +411,7 @@ fi
                         export SKIP_UPLOAD=true
                     fi
 
-                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]]; then
+                    if [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 13 "* ]] || [[ "$clean_choice" == *" 14 "* ]] || [[ "$clean_choice" == *" 15 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
                         echo "============================================================"
                         echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
                         echo "============================================================"
@@ -516,6 +517,10 @@ fi
 
                             if [[ "$clean_choice" == *" 19 "* ]]; then
                                 ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$current_type" || echo "❌ request_unlisted_app.rb gagal dijalankan."
+                            fi
+
+                            if [[ "$clean_choice" == *" 20 "* ]]; then
+                                ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$current_type" || echo "❌ submit_appstore_version.rb gagal dijalankan."
                             fi
                         done
                         exit 0
