@@ -39,7 +39,7 @@ unless package_name
   exit 1
 end
 
-target_dir = File.join(script_dir, "build_result", project_name)
+target_dir = File.join(script_dir, "build_result", project_name, app_type)
 
 # Cari file AAB yang mengandung nama aplikasi (case-insensitive search for safety)
 # Escape karakter khusus pada app_name

@@ -56,7 +56,7 @@ fi
 
 VERSION=$(grep '^version: ' pubspec.yaml | head -n 1 | awk '{print $2}' | tr -d '\r')
 TIMESTAMP=$(date +"%d-%m-%Y %H.%M")
-TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}"
+TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}/${APP_TYPE}"
 mkdir -p "$TARGET_DIR"
 
 ENV_FILE="${SCRIPT_DIR}/.env"
@@ -73,9 +73,16 @@ move_and_rename() {
     local extension="$2"
     
     if [ -f "$source_path" ]; then
+        local base_filename=$(basename "$source_path")
         local new_name="${TIMESTAMP} ${APP_NAME} ${VERSION}.${extension}"
-        cp "$source_path" "${TARGET_DIR}/${new_name}"
-        echo "  ✅ Berhasil dipindahkan: $new_name"
+        
+        # 1. Pindahkan (copy) dengan nama aslinya terlebih dahulu ke folder target
+        cp "$source_path" "${TARGET_DIR}/${base_filename}"
+        
+        # 2. Lakukan rename setelah file sepenuhnya berada di folder target
+        mv "${TARGET_DIR}/${base_filename}" "${TARGET_DIR}/${new_name}"
+        
+        echo "  ✅ Berhasil dipindahkan & di-rename: $new_name"
         
         if [ "$SKIP_UPLOAD" != "true" ] && [ -n "$GDRIVE_FOLDER_ID" ] && [ -n "$GDRIVE_CRED_PATH" ]; then
             python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "${TARGET_DIR}/${new_name}" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
@@ -85,30 +92,43 @@ move_and_rename() {
     fi
 }
 
-if [ -z "$BUILD_TARGET_APK" ] && [ -z "$BUILD_TARGET_IPA" ]; then
+if [ -z "$BUILD_TARGET_APK" ] && [ -z "$BUILD_TARGET_IPA" ] && [ -z "$BUILD_TARGET_AAB" ]; then
     BUILD_TARGET_APK=true
     BUILD_TARGET_IPA=true
+    BUILD_TARGET_AAB=true
 fi
 
 if [ "$BUILD_TARGET_APK" = true ]; then
     echo "  > Build APK..."
     if ! fvm flutter build apk; then echo "❌ Gagal build APK"; exit 1; fi
-    move_and_rename "build/app/outputs/flutter-apk/app-release.apk" "apk"
+    APK_FILE=$(find build/app/outputs -name "*.apk" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+    if [ -n "$APK_FILE" ]; then
+        move_and_rename "$APK_FILE" "apk"
+    else
+        echo "  ⚠️ File APK tidak ditemukan di direktori build/app/outputs."
+    fi
+fi
 
+if [ "$BUILD_TARGET_AAB" = true ]; then
     echo "  > Build App Bundle (AAB)..."
     if ! fvm flutter build appbundle; then echo "❌ Gagal build AAB"; exit 1; fi
-    move_and_rename "build/app/outputs/bundle/release/app-release.aab" "aab"
+    AAB_FILE=$(find build/app/outputs -name "*.aab" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+    if [ -n "$AAB_FILE" ]; then
+        move_and_rename "$AAB_FILE" "aab"
+    else
+        echo "  ⚠️ File AAB tidak ditemukan di direktori build/app/outputs."
+    fi
 fi
 
 if [ "$BUILD_TARGET_IPA" = true ]; then
     echo "  > Build IPA..."
     if ! fvm flutter build ipa; then echo "❌ Gagal build IPA"; exit 1; fi
     
-    IPA_FILE=$(find build/ios/ipa -name "*.ipa" 2>/dev/null | head -n 1)
+    IPA_FILE=$(find build/ios/ipa -name "*.ipa" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
     if [ -n "$IPA_FILE" ]; then
         move_and_rename "$IPA_FILE" "ipa"
     else
-        echo "  ⚠️ File IPA tidak ditemukan."
+        echo "  ⚠️ File IPA tidak ditemukan di direktori build/ios/ipa."
     fi
 fi
 

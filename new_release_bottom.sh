@@ -196,7 +196,7 @@ if [ "$OPT_BUILD" = true ]; then
 fi
 
 # STAGE 3: UPLOAD
-TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}"
+TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}/${type_clean}"
 
 if [ "$OPT_UPLOAD_DRIVE" = true ]; then
     echo "============================================================"

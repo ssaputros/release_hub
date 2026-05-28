@@ -344,98 +344,11 @@ fi
                 # Ganti koma dengan spasi dan tambahkan spasi di awal/akhir agar pengecekan angka lebih aman (mencegah 10 terbaca sebagai 1)
                 clean_choice=" $(echo "$action_choice" | tr ',' ' ') "
 
-                if [ -z "$action_choice" ]; then
-                    echo "❌ Pilihan tidak valid."
-                    exit 1
-                fi
-    fi
-fi
 
-# Fallback untuk mode non-interaktif
-if [ "$UPLOAD_ONLY_MODE" = true ]; then
-    if [ "$TESTFLIGHT_MODE" = true ]; then
-        action_choice="14"
-    else
-        action_choice="5"
-    fi
-elif [ "$BUILD_ONLY_MODE" = true ]; then
-    action_choice="6 13"
-elif [ -n "$RUN_ID" ]; then
-    # Full default behavior for direct RUN_ID
-    action_choice="2 6 5"
-fi
-
-# Jika menggunakan --project, tambahkan ke projects.json
-if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
-    # Generate ID dari Project Name
-    ID=$(generate_id "$PROJECT")
-    if [ -z "$ID" ]; then
-        ID=$(generate_id "$APP_NAME")
-        if [ -z "$ID" ]; then ID="default_id"; fi
-    fi
-    BRANCH="$ID"
-    BRANCH_JSON="{"
-    IFS=',' read -ra ADDR <<< "$TYPE"
-    for i in "${!ADDR[@]}"; do
-        type_clean=$(echo "${ADDR[$i]}" | xargs)
-        BRANCH_JSON+="\"$type_clean\": \"$BRANCH\""
-        if [ $i -lt $((${#ADDR[@]}-1)) ]; then BRANCH_JSON+=", "; fi
-    done
-    BRANCH_JSON+="}"
-
-    if [ -n "$BASE_URL" ]; then
-        RAW_URL=$(echo "$BASE_URL" | tr ',' ' ' | tr ' ' '\n' | grep '\.' | tail -n 1)
-        CLEAN_URL=$(echo "$RAW_URL" | sed -E 's|^https?://||' | cut -d '/' -f 1)
-        BASE_URL="https://${CLEAN_URL}"
-    fi
-
-    if [ ! -s "$PROJECT_FILE" ]; then echo "{}" > "$PROJECT_FILE"; fi
-
-    if command -v jq >/dev/null 2>&1; then
-        NEW_PROJECT=$(jq -n \
-          --arg id "$ID" \
-          --argjson branch "$BRANCH_JSON" \
-          --arg pn "$PROJECT" \
-          --arg r "$REGION" \
-          --arg an "$APP_NAME" \
-          --arg t "$TYPE" \
-          --arg bu "$BASE_URL" \
-          --arg db "$DATABASE" \
-          --arg ic "$ICON" \
-          --arg n "$NOTES" \
-          '{
-            ($id): {
-              "Branch": $branch,
-              "Project": {
-                "Project Name": $pn,
-                "Region": $r,
-                "App Name": $an,
-                "Type": $t,
-                "Base URL": $bu,
-                "Database": $db,
-                "Icon": $ic,
-                "Notes": $n
-              }
-            }
-          }')
-        jq --argjson newProj "$NEW_PROJECT" '. * $newProj' "$PROJECT_FILE" > "${PROJECT_FILE}.tmp" && mv "${PROJECT_FILE}.tmp" "$PROJECT_FILE"
-        echo "✓ Project '$ID' berhasil ditambahkan/diperbarui di projects.json!"
-    else
-        echo "⚠️ Peringatan: Program 'jq' tidak ditemukan."
-    fi
-    SELECTED_TARGETS=("$ID")
-fi
-
-if [ -z "$action_choice" ]; then
-    # Jika hanya menambah project via CLI
-    trap - EXIT
-    exit 0
-fi
-
-# Parsing ACTION ARRAY
+# Ganti koma dengan spasi dan pisahkan menjadi array
 IFS=' ' read -ra ACTION_ARRAY <<< "$(echo "$action_choice" | tr ',' ' ')"
 
-# Global setup untuk Playwright jika ada opsi automasi yang dipilih
+# Cek apakah ada opsi automasi (untuk install playwright)
 if [[ " ${ACTION_ARRAY[*]} " =~ " 4 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 7 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 8 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 9 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 12 " ]]; then
     echo "============================================================"
     echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
@@ -454,6 +367,7 @@ if [[ " ${ACTION_ARRAY[*]} " =~ " 4 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 7 " ]
     cd "${SCRIPT_DIR}" || exit 1
 fi
 
+# Fungsi helper untuk upload drive
 upload_drive() {
     local target_dir="$1"
     local p_type="$2"
@@ -524,11 +438,6 @@ execute_action() {
     local action="$1"
     
     for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
-        if ! command -v jq >/dev/null 2>&1 || ! jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
-            echo "❌ Error: Project dengan ID '$TARGET_ID' tidak ditemukan di projects.json."
-            continue
-        fi
-        
         echo "============================================================"
         echo "🚀 MEMPROSES PROJECT: $TARGET_ID"
         echo "============================================================"
@@ -680,9 +589,6 @@ for CURRENT_ACTION in "${ACTION_ARRAY[@]}"; do
         execute_action "5"
         execute_action "14"
     else
-        echo "============================================================"
-        echo "▶️ MENGEKSEKUSI OPSI: $CURRENT_ACTION"
-        echo "============================================================"
         execute_action "$CURRENT_ACTION"
     fi
 done
