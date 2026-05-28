@@ -204,6 +204,12 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         projects_data=$(jq -r 'to_entries | .[] | "\(.key)|\(.value.Project["Project Name"])"' "$PROJECT_FILE")
         
         echo "============================================================"
+        echo "🔧 UTILITIES (GLOBAL)"
+        echo "============================================================"
+        echo "A) Record Playwright UI"
+        echo "B) Download Play Store Metadata"
+        echo "C) Download App Store Metadata"
+        echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
         
@@ -217,8 +223,29 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         done <<< "$projects_data"
         
         echo "------------------------------------------------------------"
-        echo -n "Masukkan nomor project (pisahkan dengan spasi/koma, misal: 2 4 5) atau 'all': "
+        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C): "
         read -r project_input
+        if [[ "$project_input" =~ ^[Aa]$ ]]; then
+            echo "============================================================"
+            echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
+            echo "============================================================"
+            cd "${SCRIPT_DIR}/automation" || exit 1
+            if [ ! -d "node_modules" ]; then
+                echo "📦 Menginstal dependensi automation (Playwright)..."
+                npm install
+                npx playwright install chromium
+            fi
+            echo "🎥 Membuka Playwright Inspector..."
+            npm run record
+            exit 0
+        elif [[ "$project_input" =~ ^[Bb]$ ]]; then
+            ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb"
+            exit 0
+        elif [[ "$project_input" =~ ^[Cc]$ ]]; then
+            ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb"
+            exit 0
+        fi
+
         
         SELECTED_TARGETS=()
         
@@ -318,15 +345,13 @@ fi
                 echo " 1) Full (Semua proses Utama)"
                 echo " 2) Setup Konfigurasi"
                 echo " 3) Bump Version"
-                echo " 4) Record Playwright UI"
-                echo " 5) Upload APK & IPA ke Google Drive"
+                                echo " 5) Upload APK & IPA ke Google Drive"
                 echo " 6) Build APK & AAB"
                 echo " 7) Create Playstore App"
                 echo " 8) Setup Playstore App Information"
                 echo " 9) Setup Store Listing"
                 echo "10) Push Playstore Listing"
-                echo "11) Download Play Store Metadata"
-                echo "12) Update Play Console Dashboard ID"
+                                echo "12) Update Play Console Dashboard ID"
                 echo "21) Upload AAB ke Play Store"
                 echo "22) Build AAB Saja"
                 echo "13) Build IPA"
@@ -334,8 +359,7 @@ fi
                 echo "15) Submit TestFlight (Lewati Upload IPA)"
                 echo "16) Setup App Store Info"
                 echo "17) Push App Store Metadata"
-                echo "18) Download App Store Metadata"
-                echo "19) Request Unlisted App Distribution"
+                                echo "19) Request Unlisted App Distribution"
                 echo "20) Submit for App Review"
                 echo "------------------------------------------------------------"
                 echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 2 6 9 13): "
@@ -344,53 +368,197 @@ fi
                 # Ganti koma dengan spasi dan tambahkan spasi di awal/akhir agar pengecekan angka lebih aman (mencegah 10 terbaca sebagai 1)
                 clean_choice=" $(echo "$action_choice" | tr ',' ' ') "
 
-                if [ -z "$action_choice" ]; then
+                if [[ "$clean_choice" == *" 1 "* ]]; then
+                    OPT_SETUP=true
+                    OPT_BUILD=true
+                    export BUILD_TARGET_APK=true
+                    export BUILD_TARGET_AAB=true
+                    export BUILD_TARGET_IPA=true
+                    OPT_UPLOAD_DRIVE=true
+                    OPT_UPLOAD_TESTFLIGHT=true
+                else
+                    if [[ "$clean_choice" == *" 2 "* ]]; then OPT_SETUP=true; fi
+                    if [[ "$clean_choice" == *" 6 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_APK=true; export BUILD_TARGET_AAB=true; fi
+                    if [[ "$clean_choice" == *" 22 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_AAB=true; fi
+                    if [[ "$clean_choice" == *" 13 "* ]]; then OPT_BUILD=true; export BUILD_TARGET_IPA=true; fi
+                    if [[ "$clean_choice" == *" 5 "* ]]; then OPT_UPLOAD_DRIVE=true; fi
+                    if [[ "$clean_choice" == *" 14 "* ]]; then OPT_UPLOAD_TESTFLIGHT=true; fi
+                    if [[ "$clean_choice" == *" 21 "* ]]; then OPT_UPLOAD_PLAYSTORE=true; fi
+                    if [[ "$clean_choice" == *" 15 "* ]]; then 
+                        OPT_UPLOAD_TESTFLIGHT=true
+                        export SKIP_UPLOAD=true
+                    fi
+
+                    if [[ "$clean_choice" == *" 3 "* ]] || [[ "$clean_choice" == *" 4 "* ]] || [[ "$clean_choice" == *" 7 "* ]] || [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 12 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
+                        echo "============================================================"
+                        echo "🤖 MENYIAPKAN AUTOMASI / SETUP STORE"
+                        echo "============================================================"
+                        
+                        # Hanya install dan masuk ke folder automation jika memilih opsi Playwright
+                        if [[ "$clean_choice" == *" 4 "* ]] || [[ "$clean_choice" == *" 7 "* ]] || [[ "$clean_choice" == *" 8 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 12 "* ]]; then
+                            cd "${SCRIPT_DIR}/automation" || exit 1
+                            if [ ! -d "node_modules" ]; then
+                                echo "📦 Menginstal dependensi automation (Playwright)..."
+                                npm install
+                                npx playwright install chromium
+                            fi
+                            
+                            if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
+                                echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."
+                                npm run auth
+                            fi
+                        fi
+                        
+                        cd "${SCRIPT_DIR}" || exit 1
+
+                        for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
+                            echo "============================================================"
+                            echo "🚀 MEMPROSES PROJECT: $TARGET_ID"
+                            echo "============================================================"
+                            
+                            if [[ "$clean_choice" == *" 12 "* ]]; then
+                                node update_dashboard_id.js "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
+                            fi
+                            
+                            if [[ "$clean_choice" == *" 7 "* ]]; then
+                                if node create_app.js "$TARGET_ID"; then
+                                    if [[ "$clean_choice" != *" 8 "* ]]; then
+                                        echo "🚀 Otomatis melanjutkan ke Setup Playstore App Information (Langkah 8)..."
+                                        node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
+                                    fi
+                                else
+                                    echo "❌ create_app.js gagal dijalankan."
+                                fi
+                            fi
+                            
+                            if [[ "$clean_choice" == *" 8 "* ]]; then
+                                node runner_app_info.js "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
+                            fi
+    
+                            if [[ "$clean_choice" == *" 4 "* ]]; then
+                                echo "🎥 Membuka Playwright Inspector..."
+                                npm run record
+                            fi
+                            
+                            
+                            clean_target_id=$(echo "$TARGET_ID" | tr '-' '_')
+                            dynamic_type=$(eval echo "\$FILTERED_TYPE_${clean_target_id}")
+                            if [ -z "$dynamic_type" ]; then
+                                ACTIVE_TYPES=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+                            else
+                                ACTIVE_TYPES="$dynamic_type"
+                            fi
+                            IFS=',' read -ra ACTIVE_TYPES_ARR <<< "$ACTIVE_TYPES"
+                            
+                            for current_type in "${ACTIVE_TYPES_ARR[@]}"; do
+                                current_type=$(echo "$current_type" | xargs)
+                                
+                                if [[ "$clean_choice" == *" 3 "* ]] || [[ "$clean_choice" == *" 9 "* ]] || [[ "$clean_choice" == *" 10 "* ]] || [[ "$clean_choice" == *" 11 "* ]] || [[ "$clean_choice" == *" 16 "* ]] || [[ "$clean_choice" == *" 17 "* ]] || [[ "$clean_choice" == *" 18 "* ]] || [[ "$clean_choice" == *" 19 "* ]] || [[ "$clean_choice" == *" 20 "* ]]; then
+                                    echo "============================================================"
+                                    echo "🚀 MENJALANKAN SETUP UNTUK: $current_type"
+                                    echo "============================================================"
+                                fi
+    
+                                if [[ "$clean_choice" == *" 9 "* ]]; then
+                                    echo "============================================================"
+                                    echo "🛠️ PILIH METODE SETUP STORE LISTING"
+                                    echo "============================================================"
+                                    echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
+                                    echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
+                                    echo "------------------------------------------------------------"
+                                    echo -n "Pilihan Anda (default: 1): "
+                                    read -r method_choice
+                                    
+                                    if [[ "$method_choice" == "2" ]]; then
+                                        node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
+                                    else
+                                        ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
+                                    fi
+                                fi
+    
+                                if [[ "$clean_choice" == *" 3 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$current_type" || echo "❌ bump_version.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 10 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$current_type" || echo "❌ update_store_listing.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 18 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_appstore_metadata.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 17 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ push_appstore_metadata.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 11 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$current_type" || echo "❌ download_playstore_metadata.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 16 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$current_type" || echo "❌ setup_appstore_info.rb gagal dijalankan."
+                                fi
+    
+                                if [[ "$clean_choice" == *" 19 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$current_type" || echo "❌ request_unlisted_app.rb gagal dijalankan."
+                                fi
+                                    if [[ "$clean_choice" == *" 20 "* ]]; then
+                                    ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$current_type" || echo "❌ submit_appstore_version.rb gagal dijalankan."
+                                fi
+                            done
+                        done
+                        exit 0
+                    fi
+                fi
+                
+                if [ "$OPT_SETUP" = false ] && [ "$OPT_BUILD" = false ] && [ "$OPT_UPLOAD_DRIVE" = false ] && [ "$OPT_UPLOAD_TESTFLIGHT" = false ] && [ "$OPT_UPLOAD_PLAYSTORE" = false ]; then
                     echo "❌ Pilihan tidak valid."
                     exit 1
                 fi
     fi
 fi
 
-# Fallback untuk mode non-interaktif
-if [ "$UPLOAD_ONLY_MODE" = true ]; then
-    if [ "$TESTFLIGHT_MODE" = true ]; then
-        action_choice="14"
-    else
-        action_choice="5"
-    fi
-elif [ "$BUILD_ONLY_MODE" = true ]; then
-    action_choice="6 13"
-elif [ -n "$RUN_ID" ]; then
-    # Full default behavior for direct RUN_ID
-    action_choice="2 6 5"
-fi
-
-# Jika menggunakan --project, tambahkan ke projects.json
 if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
     # Generate ID dari Project Name
     ID=$(generate_id "$PROJECT")
     if [ -z "$ID" ]; then
+        # Fallback jika nama project kosong
         ID=$(generate_id "$APP_NAME")
-        if [ -z "$ID" ]; then ID="default_id"; fi
+        if [ -z "$ID" ]; then
+            ID="default_id"
+        fi
     fi
+
+    # Set Branch sama dengan ID
     BRANCH="$ID"
+
+    # Generate Branch JSON object based on TYPE
     BRANCH_JSON="{"
     IFS=',' read -ra ADDR <<< "$TYPE"
     for i in "${!ADDR[@]}"; do
         type_clean=$(echo "${ADDR[$i]}" | xargs)
         BRANCH_JSON+="\"$type_clean\": \"$BRANCH\""
-        if [ $i -lt $((${#ADDR[@]}-1)) ]; then BRANCH_JSON+=", "; fi
+        if [ $i -lt $((${#ADDR[@]}-1)) ]; then
+            BRANCH_JSON+=", "
+        fi
     done
     BRANCH_JSON+="}"
 
+
+    # Membersihkan dan memformat BASE_URL
     if [ -n "$BASE_URL" ]; then
         RAW_URL=$(echo "$BASE_URL" | tr ',' ' ' | tr ' ' '\n' | grep '\.' | tail -n 1)
         CLEAN_URL=$(echo "$RAW_URL" | sed -E 's|^https?://||' | cut -d '/' -f 1)
         BASE_URL="https://${CLEAN_URL}"
     fi
 
-    if [ ! -s "$PROJECT_FILE" ]; then echo "{}" > "$PROJECT_FILE"; fi
+    # Inisialisasi projects.json jika belum ada atau kosong
+    if [ ! -s "$PROJECT_FILE" ]; then
+        echo "{}" > "$PROJECT_FILE"
+    fi
 
+    # Mencetak output dalam format JSON dan menyimpannya ke projects.json
     if command -v jq >/dev/null 2>&1; then
         NEW_PROJECT=$(jq -n \
           --arg id "$ID" \
@@ -418,277 +586,186 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
               }
             }
           }')
+        
+        # Gabungkan (merge) project baru ke dalam projects.json
         jq --argjson newProj "$NEW_PROJECT" '. * $newProj' "$PROJECT_FILE" > "${PROJECT_FILE}.tmp" && mv "${PROJECT_FILE}.tmp" "$PROJECT_FILE"
         echo "✓ Project '$ID' berhasil ditambahkan/diperbarui di projects.json!"
     else
         echo "⚠️ Peringatan: Program 'jq' tidak ditemukan."
+        echo "Harap install 'jq' agar data bisa disimpan otomatis ke projects.json."
     fi
     SELECTED_TARGETS=("$ID")
 fi
 
-if [ -z "$action_choice" ]; then
-    # Jika hanya menambah project via CLI
+for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
+    if command -v jq >/dev/null 2>&1 && jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
+        echo "🚀 Mengeksekusi project terdaftar: $TARGET_ID"
+        PROJECT=$(jq -r ".\"$TARGET_ID\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
+        REGION=$(jq -r ".\"$TARGET_ID\".Project.Region // empty" "$PROJECT_FILE")
+        APP_NAME=$(jq -r ".\"$TARGET_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
+        TYPE=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
+        if [ -n "$FILTERED_TYPE" ]; then
+            TYPE="$FILTERED_TYPE"
+        fi
+        BASE_URL=$(jq -r ".\"$TARGET_ID\".Project.\"Base URL\" // empty" "$PROJECT_FILE")
+        DATABASE=$(jq -r ".\"$TARGET_ID\".Project.Database // empty" "$PROJECT_FILE")
+        ICON=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
+        NOTES=$(jq -r ".\"$TARGET_ID\".Project.Notes // empty" "$PROJECT_FILE")
+        ID="$TARGET_ID"
+    else
+        echo "❌ Error: Project dengan ID '$TARGET_ID' tidak ditemukan di projects.json, atau jq tidak terinstall."
+        exit 1
+    fi
+
+
+echo "============================================================"
+echo "📋 PROJECT INFORMATION"
+echo "============================================================"
+if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
+    jq ".\"$ID\"" "$PROJECT_FILE"
+else
+    echo "ID: $ID | Project: $PROJECT | App Name: $APP_NAME"
+fi
+echo ""
+
+# Jika tidak ada opsi eksekusi yang aktif (hanya menambahkan project), maka keluar dengan bersih
+if [ "$OPT_SETUP" != true ] && [ "$OPT_BUILD" != true ] && [ "$OPT_UPLOAD_DRIVE" != true ] && [ "$OPT_UPLOAD_TESTFLIGHT" != true ] && [ "$OPT_UPLOAD_PLAYSTORE" != true ] && [ "$UPLOAD_ONLY_MODE" != true ] && [ "$BUILD_ONLY_MODE" != true ]; then
     trap - EXIT
     exit 0
 fi
 
-# Parsing ACTION ARRAY
-IFS=' ' read -ra ACTION_ARRAY <<< "$(echo "$action_choice" | tr ',' ' ')"
+# Gunakan script general (app_meta.js) untuk memproses Package Name dan App Name
+CONFIG_FILE="${SCRIPT_DIR}/config.json"
+META_JSON=$(node "${SCRIPT_DIR}/scripts/app_meta.js" "$ID" "$APP_NAME" "$TYPE" "$CONFIG_FILE")
+APP_PACKAGE_NAME=$(echo "$META_JSON" | jq -r '.packageName')
+APP_NAME=$(echo "$META_JSON" | jq -r '.appName')
+PRIMARY_TYPE=$(echo "$META_JSON" | jq -r '.primaryType')
 
-# Global setup untuk Playwright jika ada opsi automasi yang dipilih
-if [[ " ${ACTION_ARRAY[*]} " =~ " 4 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 7 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 8 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 9 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 12 " ]]; then
-    echo "============================================================"
-    echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
-    echo "============================================================"
-    cd "${SCRIPT_DIR}/automation" || exit 1
-    if [ ! -d "node_modules" ]; then
-        echo "📦 Menginstal dependensi automation (Playwright)..."
-        npm install
-        npx playwright install chromium
+
+# STAGE 1: SETUP
+if [ "$OPT_SETUP" = true ]; then
+    if [ -n "$ICON" ]; then
+        echo "============================================================"
+        echo "🖼️ MENYIAPKAN IKON APLIKASI"
+        echo "============================================================"
+        bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON" || { echo "❌ Gagal menyiapkan ikon!"; exit 1; }
+        echo ""
     fi
-    
-    if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
-        echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."
-        npm run auth
-    fi
-    cd "${SCRIPT_DIR}" || exit 1
+
+    echo "============================================================"
+    echo "📊 INFORMASI APLIKASI (Release Hub)"
+    echo "============================================================"
+    bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
 fi
 
-upload_drive() {
-    local target_dir="$1"
-    local p_type="$2"
-    local proj="$3"
-    local a_name="$4"
+# Eksekusi loop per-tipe untuk setup dinamis, build, dan upload
+IFS=',' read -ra ADDR <<< "$TYPE"
+for type_item in "${ADDR[@]}"; do
+    type_clean=$(echo "$type_item" | xargs)
+    type_slug=$(echo "$type_clean" | tr 'A-Z' 'a-z' | tr ' ' '_')
     
-    local gdrive_folder_id=""
-    if [ -f "${SCRIPT_DIR}/config.json" ]; then
-        gdrive_folder_id=$(jq -r ".types[\"$p_type\"].gdrive_folder_id // empty" "${SCRIPT_DIR}/config.json")
-    fi
-    
-    local env_file="${SCRIPT_DIR}/.env"
-    local gdrive_cred_path=""
-    if [ -f "$env_file" ]; then
-        local raw_cred_path=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$env_file" | cut -d '"' -f 2)
-        if [ -n "$raw_cred_path" ]; then
-            gdrive_cred_path="${SCRIPT_DIR}/${raw_cred_path}"
+    if [ "$OPT_SETUP" = true ]; then
+        script_file="${SCRIPT_DIR}/scripts/project_types/setup_${type_slug}.sh"
+        
+        if [ -f "$script_file" ]; then
+            echo "============================================================"
+            echo "⚙️ SETUP PROJECT: $type_clean"
+            echo "============================================================"
+            bash "$script_file" "$ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
+            echo "============================================================"
         fi
     fi
     
-    if [ -z "$gdrive_folder_id" ] || [ -z "$gdrive_cred_path" ]; then
+# STAGE 2: BUILD
+if [ "$OPT_BUILD" = true ]; then
+    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
+        SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
+    else
+        echo "❌ Script build_app.sh tidak ditemukan!"
+        exit 1
+    fi
+fi
+
+# STAGE 3: UPLOAD
+TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT}/${type_clean}"
+
+if [ "$OPT_UPLOAD_DRIVE" = true ]; then
+    echo "============================================================"
+    echo "🚀 MENGUNGGAH KE GOOGLE DRIVE: $APP_NAME"
+    echo "============================================================"
+    
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "❌ Error: Folder $TARGET_DIR tidak ditemukan."
+        exit 1
+    fi
+    
+    GDRIVE_FOLDER_ID=""
+    if [ -f "$CONFIG_FILE" ]; then
+        GDRIVE_FOLDER_ID=$(jq -r ".types[\"$PRIMARY_TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
+    fi
+    
+    ENV_FILE="${SCRIPT_DIR}/.env"
+    GDRIVE_CRED_PATH=""
+    if [ -f "$ENV_FILE" ]; then
+        RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
+        if [ -n "$RAW_CRED_PATH" ]; then
+            GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"
+        fi
+    fi
+    
+    if [ -z "$GDRIVE_FOLDER_ID" ] || [ -z "$GDRIVE_CRED_PATH" ]; then
         echo "❌ Error: Konfigurasi Google Drive tidak lengkap di config.json atau .env."
         exit 1
     fi
     
-    local latest_apk=$(find "$target_dir" -name "*.apk" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
-    if [ -n "$latest_apk" ]; then
-        python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$latest_apk" "$gdrive_folder_id" "$gdrive_cred_path" "$proj" "$a_name"
+    LATEST_APK=$(find "$TARGET_DIR" -name "*.apk" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+    if [ -n "$LATEST_APK" ]; then
+        python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$LATEST_APK" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT" "$APP_NAME"
     else
-        echo "⚠️ File APK tidak ditemukan di $target_dir"
+        echo "⚠️ File APK tidak ditemukan di $TARGET_DIR"
         exit 1
     fi
-}
+fi
 
-upload_testflight() {
-    local target_dir="$1"
-    local t_id="$2"
-    local a_pkg="$3"
-    local a_name="$4"
-    local t_clean="$5"
+if [ "$OPT_UPLOAD_TESTFLIGHT" = true ]; then
+    echo "============================================================"
+    echo "🍎 MENGUNGGAH KE TESTFLIGHT: $APP_NAME"
+    echo "============================================================"
     
-    local latest_ipa=$(find "$target_dir" -name "*.ipa" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
-    if [ -n "$latest_ipa" ]; then
-        ruby "${SCRIPT_DIR}/scripts/upload_to_testflight.rb" "$latest_ipa" "$a_pkg" "$a_name" "$t_clean"
-        local ruby_exit_code=$?
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "❌ Error: Folder $TARGET_DIR tidak ditemukan."
+        exit 1
+    fi
+    
+    LATEST_IPA=$(find "$TARGET_DIR" -name "*.ipa" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
+    if [ -n "$LATEST_IPA" ]; then
+        ruby "${SCRIPT_DIR}/scripts/upload_to_testflight.rb" "$LATEST_IPA" "$APP_PACKAGE_NAME" "$APP_NAME" "$TYPE"
+        ruby_exit_code=$?
         
         if [ $ruby_exit_code -eq 2 ]; then
             echo "🕒 Menjadwalkan submit ulang TestFlight dalam 5 menit..."
-            nohup bash -c "sleep 300 && cd \"${SCRIPT_DIR}\" && SKIP_UPLOAD=true ./release.sh -t \"$t_id\"" > "${SCRIPT_DIR}/testflight_retry.log" 2>&1 &
-            local pid=$!
-            echo "$pid|$t_id|$a_name|$(date +%s)" >> "${SCRIPT_DIR}/.schedulers"
-            echo "✅ Penjadwalan berhasil (proses berjalan di background dengan PID: $pid)."
+            nohup bash -c "sleep 300 && cd \"${SCRIPT_DIR}\" && SKIP_UPLOAD=true ./release.sh -t \"$ID\"" > "${SCRIPT_DIR}/testflight_retry.log" 2>&1 &
+            PID=$!
+            echo "$PID|$ID|$APP_NAME|$(date +%s)" >> "${SCRIPT_DIR}/.schedulers"
+            echo "✅ Penjadwalan berhasil (proses berjalan di background dengan PID: $PID)."
         elif [ $ruby_exit_code -ne 0 ]; then
             echo "❌ Upload ke TestFlight gagal."
             exit 1
         fi
     else
-        echo "⚠️ File IPA tidak ditemukan di $target_dir"
+        echo "⚠️ File IPA tidak ditemukan di $TARGET_DIR"
         exit 1
     fi
 
     if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
-        bash "${SCRIPT_DIR}/init_appstore.sh" "$t_id" || { echo "❌ Proses init appstore gagal!"; exit 1; }
+        bash "${SCRIPT_DIR}/init_appstore.sh" "$ID" || { echo "❌ Proses init appstore gagal!"; exit 1; }
     fi
-}
+fi
 
-execute_action() {
-    local action="$1"
-    
-    for TARGET_ID in "${SELECTED_TARGETS[@]}"; do
-        if ! command -v jq >/dev/null 2>&1 || ! jq -e ".\"$TARGET_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
-            echo "❌ Error: Project dengan ID '$TARGET_ID' tidak ditemukan di projects.json."
-            continue
-        fi
-        
-        echo "============================================================"
-        echo "🚀 MEMPROSES PROJECT: $TARGET_ID"
-        echo "============================================================"
-        
-        # Eksekusi aksi yang berada di level target (tidak butuh looping per tipe aplikasi)
-        case "$action" in
-            4) 
-                echo "🎥 Membuka Playwright Inspector..."
-                npm run record
-                continue
-                ;;
-            7) 
-                if node "${SCRIPT_DIR}/automation/create_app.js" "$TARGET_ID"; then
-                    echo "✅ create_app.js berhasil"
-                else
-                    echo "❌ create_app.js gagal dijalankan."
-                fi
-                continue
-                ;;
-            8) 
-                node "${SCRIPT_DIR}/automation/runner_app_info.js" "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
-                continue
-                ;;
-            12) 
-                node "${SCRIPT_DIR}/automation/update_dashboard_id.js" "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
-                continue
-                ;;
-        esac
-        
-        # Dapatkan list tipe aplikasi untuk project ini
-        clean_target_id=$(echo "$TARGET_ID" | tr '-' '_')
-        dynamic_type=$(eval echo "\$FILTERED_TYPE_${clean_target_id}")
-        if [ -z "$dynamic_type" ]; then
-            ACTIVE_TYPES=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
-        else
-            ACTIVE_TYPES="$dynamic_type"
-        fi
-        IFS=',' read -ra ACTIVE_TYPES_ARR <<< "$ACTIVE_TYPES"
-        
-        for current_type in "${ACTIVE_TYPES_ARR[@]}"; do
-            type_clean=$(echo "$current_type" | xargs)
-            type_slug=$(echo "$type_clean" | tr 'A-Z' 'a-z' | tr ' ' '_')
-            
-            # Ambil META informasi untuk project dan tipe ini
-            CONFIG_FILE="${SCRIPT_DIR}/config.json"
-            META_JSON=$(node "${SCRIPT_DIR}/scripts/app_meta.js" "$TARGET_ID" "" "$type_clean" "$CONFIG_FILE")
-            APP_PACKAGE_NAME=$(echo "$META_JSON" | jq -r '.packageName')
-            APP_NAME=$(echo "$META_JSON" | jq -r '.appName')
-            PRIMARY_TYPE=$(echo "$META_JSON" | jq -r '.primaryType')
-            PROJECT_NAME=$(jq -r ".\"$TARGET_ID\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
-            TARGET_DIR="${SCRIPT_DIR}/build_result/${PROJECT_NAME}/${type_clean}"
-            
-            echo "============================================================"
-            echo "⚙️ MENJALANKAN OPSI $action UNTUK: $type_clean ($APP_NAME)"
-            echo "============================================================"
-            
-            case "$action" in
-                2) # Setup Konfigurasi
-                   bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
-                   script_file="${SCRIPT_DIR}/scripts/project_types/setup_${type_slug}.sh"
-                   if [ -f "$script_file" ]; then
-                       REGION=$(jq -r ".\"$TARGET_ID\".Project.Region // empty" "$PROJECT_FILE")
-                       BASE_URL=$(jq -r ".\"$TARGET_ID\".Project.\"Base URL\" // empty" "$PROJECT_FILE")
-                       DATABASE=$(jq -r ".\"$TARGET_ID\".Project.Database // empty" "$PROJECT_FILE")
-                       bash "$script_file" "$TARGET_ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
-                   fi
-                   ;;
-                3) ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
-                5) # Upload GDrive
-                   echo "🚀 MENGUNGGAH KE GOOGLE DRIVE: $APP_NAME"
-                   upload_drive "$TARGET_DIR" "$PRIMARY_TYPE" "$PROJECT_NAME" "$APP_NAME"
-                   ;;
-                6) # Build APK & AAB
-                   if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
-                       BUILD_TARGET_APK=true BUILD_TARGET_AAB=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
-                   else
-                       echo "❌ Script build_app.sh tidak ditemukan!"
-                       exit 1
-                   fi
-                   ;;
-                9) # Setup Store Listing
-                   echo "============================================================"
-                   echo "🛠️ PILIH METODE SETUP STORE LISTING"
-                   echo "============================================================"
-                   echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
-                   echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
-                   echo "------------------------------------------------------------"
-                   echo -n "Pilihan Anda (default: 1): "
-                   read -r method_choice
-                   if [[ "$method_choice" == "2" ]]; then
-                       node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
-                   else
-                       ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$type_clean" || echo "❌ update_store_listing.rb gagal dijalankan."
-                   fi
-                   ;;
-                10) ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$type_clean" || echo "❌ update_store_listing.rb gagal dijalankan." ;;
-                11) ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb" "$TARGET_ID" "$type_clean" || echo "❌ download_playstore_metadata.rb gagal dijalankan." ;;
-                13) # Build IPA
-                   if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
-                       BUILD_TARGET_IPA=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
-                   else
-                       echo "❌ Script build_app.sh tidak ditemukan!"
-                       exit 1
-                   fi
-                   ;;
-                14) # Upload TestFlight
-                   echo "🍎 MENGUNGGAH KE TESTFLIGHT: $APP_NAME"
-                   upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
-                   ;;
-                15) # Submit TestFlight
-                   echo "🍎 MENGUNGGAH KE TESTFLIGHT: $APP_NAME (Skip IPA Upload)"
-                   export SKIP_UPLOAD=true
-                   upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
-                   ;;
-                16) ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$type_clean" || echo "❌ setup_appstore_info.rb gagal dijalankan." ;;
-                17) ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$type_clean" || echo "❌ push_appstore_metadata.rb gagal dijalankan." ;;
-                18) ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb" "$TARGET_ID" "$type_clean" || echo "❌ download_appstore_metadata.rb gagal dijalankan." ;;
-                19) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
-                20) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
-                21) # Upload Play Store
-                   ruby "${SCRIPT_DIR}/scripts/submit_playstore_version.rb" "$TARGET_ID" "$type_clean" || { echo "❌ Proses upload Play Store gagal!"; exit 1; }
-                   ;;
-                22) # Build AAB Saja
-                   if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
-                       BUILD_TARGET_AAB=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
-                   else
-                       echo "❌ Script build_app.sh tidak ditemukan!"
-                       exit 1
-                   fi
-                   ;;
-            esac
-        done
-    done
-}
+if [ "$OPT_UPLOAD_PLAYSTORE" = true ]; then
+    ruby "${SCRIPT_DIR}/scripts/submit_playstore_version.rb" "$ID" "$type_clean" || { echo "❌ Proses upload Play Store gagal!"; exit 1; }
+fi
 
-for CURRENT_ACTION in "${ACTION_ARRAY[@]}"; do
-    if [ -z "$CURRENT_ACTION" ]; then
-        continue
-    fi
-    
-    if [ "$CURRENT_ACTION" = "1" ]; then
-        echo "============================================================"
-        echo "▶️ MENGEKSEKUSI OPSI: 1 (FULL PROSES)"
-        echo "============================================================"
-        echo "Menjalankan opsi penuh (1) akan diurai menjadi: 2 (Setup), 6 (Build APK & AAB), 13 (Build IPA), 5 (Upload GDrive), 14 (Upload TestFlight)"
-        execute_action "2"
-        execute_action "6"
-        execute_action "13"
-        execute_action "5"
-        execute_action "14"
-    else
-        echo "============================================================"
-        echo "▶️ MENGEKSEKUSI OPSI: $CURRENT_ACTION"
-        echo "============================================================"
-        execute_action "$CURRENT_ACTION"
-    fi
 done
 
-echo ""
-echo "============================================================"
-echo "✅ SEMUA PROSES SELESAI!"
-echo "============================================================"
-exit 0
+done
