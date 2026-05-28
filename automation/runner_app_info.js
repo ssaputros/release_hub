@@ -153,12 +153,20 @@ const steps = stepNames.map(name => ({
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000); // Tunggu rendering awal
 
+    // Scroll sedikit ke bawah untuk memicu lazy-loading jika ada
+    await page.evaluate(() => window.scrollBy(0, 500)).catch(() => {});
+    await page.waitForTimeout(1000);
+
     // Buka daftar tugas jika tombol 'View tasks' tersedia di dashboard
     const expandTasksBtn = page.getByRole('button', { name: 'View tasks for Provide', exact: false });
-    if (await expandTasksBtn.isVisible().catch(() => false)) {
-        console.log("📂 Membuka daftar tugas (View tasks for Provide)...");
-        await expandTasksBtn.click();
-        await page.waitForTimeout(1000);
+    if (await expandTasksBtn.count() > 0) {
+        // Pastikan elemen discroll ke dalam layar sebelum dicek visibilitasnya
+        await expandTasksBtn.first().scrollIntoViewIfNeeded().catch(() => {});
+        if (await expandTasksBtn.first().isVisible().catch(() => false)) {
+            console.log("📂 Membuka daftar tugas (View tasks for Provide)...");
+            await expandTasksBtn.first().click({ force: true }).catch(e => console.log("⚠️ Gagal klik tombol tasks:", e.message));
+            await page.waitForTimeout(1000);
+        }
     }
 
     const rl = readline.createInterface({
@@ -184,34 +192,11 @@ const steps = stepNames.map(name => ({
         console.log(`✅ Langkah ${steps[i].name} selesai!`);
     };
 
-    while (true) {
-        console.log("\n============================================================");
-        console.log("🛠️ MENU EKSEKUSI LANGKAH APP INFORMATION");
-        console.log("============================================================");
-        for (let i = 0; i < steps.length; i++) {
-            console.log(`${i + 1}) ${steps[i].name}`);
-        }
-        console.log("A) Eksekusi Semua Langkah (Berurutan)");
-        console.log("0) Selesai / Keluar");
-        console.log("------------------------------------------------------------");
-        
-        const answer = (await askQuestion("Pilih langkah (misal: 1, 3, A, 0): ")).trim().toUpperCase();
-        
-        if (answer === '0') {
-            break;
-        } else if (answer === 'A') {
-            for (let i = 0; i < steps.length; i++) {
-                await executeStep(i);
-            }
-            break; // Keluar setelah run semua
-        } else {
-            const idx = parseInt(answer) - 1;
-            if (!isNaN(idx) && idx >= 0 && idx < steps.length) {
-                await executeStep(idx);
-            } else {
-                console.log("❌ Pilihan tidak valid!");
-            }
-        }
+    console.log("\n============================================================");
+    console.log("🚀 MENGEKSEKUSI SEMUA LANGKAH SECARA OTOMATIS");
+    console.log("============================================================");
+    for (let i = 0; i < steps.length; i++) {
+        await executeStep(i);
     }
 
     rl.close();

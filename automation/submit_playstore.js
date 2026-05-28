@@ -125,9 +125,8 @@ if (!appData) {
     console.log("Tutup jendela browser ini atau tekan CTRL+C pada terminal jika sudah selesai.");
     console.log("============================================================\n");
     
-    // Tunggu sampai browser ditutup secara manual oleh user
-    await new Promise(() => {});
-
+    // Tunggu sampai jendela browser (atau tab) ditutup secara manual oleh user
+    await page.waitForEvent('close', { timeout: 0 });
   } catch (error) {
     console.error("❌ Terjadi kesalahan saat eksekusi:", error.message);
     process.exit(1);

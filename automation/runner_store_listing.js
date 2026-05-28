@@ -168,34 +168,11 @@ const steps = stepNames.map(name => ({
         console.log(`✅ Langkah ${steps[i].name} selesai!`);
     };
 
-    while (true) {
-        console.log("\n============================================================");
-        console.log("🛠️ MENU EKSEKUSI LANGKAH STORE LISTING");
-        console.log("============================================================");
-        for (let i = 0; i < steps.length; i++) {
-            console.log(`${i + 1}) ${steps[i].name}`);
-        }
-        console.log("A) Eksekusi Semua Langkah (Berurutan)");
-        console.log("0) Selesai / Keluar");
-        console.log("------------------------------------------------------------");
-        
-        const answer = (await askQuestion("Pilih langkah (misal: 1, A, 0): ")).trim().toUpperCase();
-        
-        if (answer === '0') {
-            break;
-        } else if (answer === 'A') {
-            for (let i = 0; i < steps.length; i++) {
-                await executeStep(i);
-            }
-            break;
-        } else {
-            const idx = parseInt(answer) - 1;
-            if (!isNaN(idx) && idx >= 0 && idx < steps.length) {
-                await executeStep(idx);
-            } else {
-                console.log("❌ Pilihan tidak valid!");
-            }
-        }
+    console.log("\n============================================================");
+    console.log("🚀 MENGEKSEKUSI SEMUA LANGKAH SECARA OTOMATIS");
+    console.log("============================================================");
+    for (let i = 0; i < steps.length; i++) {
+        await executeStep(i);
     }
 
     rl.close();
