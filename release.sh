@@ -716,8 +716,8 @@ execute_action() {
                    echo "🍎 SUBMIT TESTFLIGHT (TANPA UPLOAD): $APP_NAME"
                    SKIP_UPLOAD=true upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
                    ;;
-                12) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
-                13) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
+                12) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
+                13) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
                 17) 
                    echo "============================================================"
                    echo "🛠️ PILIH METODE SETUP STORE LISTING"

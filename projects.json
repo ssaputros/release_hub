@@ -248,7 +248,6 @@
       "HRM Apps": "com.hashmicro.eva.zio"
     }
   },
-  
   "sti": {
     "Branch": {
       "HRM Apps": "sti-break",
@@ -265,6 +264,17 @@
       "Base URL": "https://sti.hashmicro.co",
       "Database": "sumatra-timur-live",
       "Icon": ""
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4974773685701127713"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.approval.sti",
+      "HRM Apps": "com.hashmicro.eva.sti"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.approval.sti",
+      "HRM Apps": "com.hashmicro.eva.sti"
     }
   }
 }

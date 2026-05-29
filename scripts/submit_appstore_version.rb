@@ -20,6 +20,7 @@ projects = JSON.parse(File.read(projects_path))
 # 3. Argument Parsing
 run_id = ARGV[0]
 app_type = ARGV[1]
+bundle_id_arg = ARGV[2]
 
 if run_id.nil? || run_id.empty?
   puts "❌ Error: Parameter Project ID kosong."
@@ -43,7 +44,24 @@ if app_type.nil? || app_type.empty?
   end
 end
 
-bundle_id = app_data['Bundle ID'][app_type]
+if bundle_id_arg && !bundle_id_arg.empty?
+  bundle_id = bundle_id_arg
+else
+  bundle_id = app_data.dig('Bundle ID', app_type) || app_data.dig('Package ID', app_type)
+  
+  if bundle_id.nil? || bundle_id.empty?
+    # Fallback to config.json prefix + run_id
+    config_path = File.join(project_root, "config.json")
+    if File.exist?(config_path)
+      config = JSON.parse(File.read(config_path))
+      prefix = config.dig('types', app_type, 'prefix') || "com.example"
+      bundle_id = "#{prefix}.#{run_id}"
+    else
+      bundle_id = "com.example.#{run_id}"
+    end
+  end
+end
+
 if bundle_id.nil? || bundle_id.empty?
   puts "❌ Error: Bundle ID tidak ditemukan untuk tipe #{app_type}."
   exit 1
@@ -87,36 +105,18 @@ build_number = latest_build.version
 
 puts "✅ Build terakhir ditemukan: Versi #{version_string} (Build #{build_number})"
 
-# 2. Cek apakah ini aplikasi baru (First Version) atau bukan
-live_version = app.get_live_app_store_version
-edit_version = app.get_edit_app_store_version
+# 2. Cek apakah versi draft sudah ada, jika belum buat baru
+puts "🔄 Memastikan versi App Store #{version_string} tersedia (draft/prepare for submission)..."
+begin
+  edit_version = app.ensure_version!(version_string, platform: "IOS")
+rescue => e
+  puts "⚠️ Peringatan saat menyiapkan versi: #{e.message}"
+  edit_version = app.get_edit_app_store_version
+end
 
-if live_version.nil?
-  puts "ℹ️ Ini adalah versi pertama aplikasi di App Store."
-  if edit_version.nil?
-    puts "🔄 Membuat versi pertama: #{version_string}..."
-    edit_version = app.create_app_store_version(version_string: version_string, platform: "IOS")
-  else
-    puts "ℹ️ Menggunakan versi draft yang sudah ada. Menyesuaikan versi ke #{version_string}..."
-    begin
-      edit_version.update(attributes: { versionString: version_string })
-    rescue => e
-      puts "⚠️ Peringatan saat update versi (biasanya aman diabaikan): #{e.message}"
-    end
-  end
-else
-  puts "ℹ️ Aplikasi sudah memiliki versi live: #{live_version.version_string}"
-  if edit_version.nil?
-    puts "🔄 Membuat versi App Store baru: #{version_string}..."
-    edit_version = app.create_app_store_version(version_string: version_string, platform: "IOS")
-  else
-    puts "ℹ️ Versi draft (Prepare for Submission) sudah ada. Menyesuaikan versi ke #{version_string}..."
-    begin
-      edit_version.update(attributes: { versionString: version_string })
-    rescue => e
-      puts "⚠️ Peringatan saat update versi (biasanya aman diabaikan): #{e.message}"
-    end
-  end
+if edit_version.nil?
+  puts "❌ Gagal membuat atau menyiapkan versi draft aplikasi."
+  exit 1
 end
 
 # 3. Tetapkan build ke versi ini

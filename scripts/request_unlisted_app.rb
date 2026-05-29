@@ -27,6 +27,7 @@ projects = JSON.parse(File.read(projects_path))
 # 3. Argument Parsing
 run_id = ARGV[0]
 app_type = ARGV[1]
+bundle_id_arg = ARGV[2]
 
 if run_id.nil? || run_id.empty?
   puts "❌ Error: Parameter Project ID kosong."
@@ -54,9 +55,27 @@ puts "\n============================================================"
 puts "🍎 REQUEST UNLISTED APP DISTRIBUTION"
 puts "============================================================"
 
-# Resolve Bundle ID and App Name from projects.json
-bundle_id = app_data['Bundle ID'][app_type]
-app_name = app_data['Project']['App Name'][app_type] || "My App"
+# Resolve Bundle ID and App Name
+if bundle_id_arg && !bundle_id_arg.empty?
+  bundle_id = bundle_id_arg
+else
+  bundle_id = app_data.dig('Bundle ID', app_type) || app_data.dig('Package ID', app_type)
+  
+  if bundle_id.nil? || bundle_id.empty?
+    config_path = File.join(project_root, "config.json")
+    if File.exist?(config_path)
+      config = JSON.parse(File.read(config_path))
+      prefix = config.dig('types', app_type, 'prefix') || "com.example"
+      bundle_id = "#{prefix}.#{run_id}"
+    else
+      bundle_id = "com.example.#{run_id}"
+    end
+  end
+end
+
+app_name = app_data.dig('Project', 'App Name', app_type) || app_data.dig('Project', 'App Name') || "My App"
+# Pastikan app_name bertipe String jika struktur JSON berubah
+app_name = app_name.is_a?(Hash) ? app_name[app_type] : app_name
 
 puts "Project       : #{app_data['Project']['Project Name']}"
 puts "App Type      : #{app_type}"
