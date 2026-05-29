@@ -160,8 +160,11 @@ while [[ "$#" -gt 0 ]]; do
         --icon) ICON="$2"; shift ;;
         --notes) NOTES="$2"; shift ;;
         *) 
+            # Jika argumen berupa durasi waktu (15m, 1h, 30s)
+            if [[ "$1" =~ ^[0-9]+[mhsd]$ ]]; then
+                DELAY_TIME="$1"
             # Jika argumen tidak diawali '--' dan RUN_ID masih kosong, anggap itu ID project
-            if [[ "$1" != --* ]] && [ -z "$RUN_ID" ]; then
+            elif [[ "$1" != --* ]] && [ -z "$RUN_ID" ]; then
                 RUN_ID="$1"
             else
                 echo "Error: Parameter tidak dikenal '$1'"
@@ -171,6 +174,23 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+ORIGINAL_ARGS="$*"
+
+LOG_FILE="${SCRIPT_DIR}/release_scheduler.log"
+log_action() {
+    local status="$1"
+    local message="$2"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$status] $message" >> "$LOG_FILE"
+}
+
+if [ -n "$DELAY_TIME" ]; then
+    log_action "INFO" "Scheduled release started. Waiting for $DELAY_TIME. Args: $ORIGINAL_ARGS"
+    echo "⏳ Menunda eksekusi script selama $DELAY_TIME..."
+    sleep "$DELAY_TIME"
+    log_action "INFO" "Wait time $DELAY_TIME finished. Executing target: ${RUN_ID:-Interactive}."
+    echo "▶️ Waktu tunggu selesai! Memulai eksekusi sekarang..."
+fi
 
 # Fungsi untuk membuat ID (gabungan teks, lowercase, tanpa special char)
 generate_id() {
@@ -184,6 +204,16 @@ export RUBYOPT="-W0"
 
 # Trap function untuk membersihkan temporary files dan memainkan suara ketika script berhenti
 on_exit() {
+    local exit_code=$?
+    
+    if [ -n "$DELAY_TIME" ]; then
+        if [ $exit_code -eq 0 ]; then
+            log_action "SUCCESS" "Scheduled release ($DELAY_TIME) finished successfully. Target: ${RUN_ID:-Interactive}"
+        else
+            log_action "ERROR" "Scheduled release ($DELAY_TIME) failed with exit code $exit_code. Target: ${RUN_ID:-Interactive}"
+        fi
+    fi
+
     echo ""
     echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
     git checkout -- android/ ios/ >/dev/null 2>&1
@@ -210,6 +240,10 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "B) Download Play Store Metadata"
         echo "C) Download App Store Metadata"
         echo "D) Create New Project"
+        echo "E) Upload Google Drive (File Bebas)"
+        echo "F) Submit Testflight (File IPA)"
+        echo "G) Submit Appstore Review (File IPA)"
+        echo "H) Submit Playstore (File AAB)"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -224,7 +258,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         done <<< "$projects_data"
         
         echo "------------------------------------------------------------"
-        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D): "
+        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H): "
         read -r project_input
         if [[ "$project_input" =~ ^[Aa]$ ]]; then
             echo "============================================================"
@@ -257,6 +291,106 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             read -p "Database [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
             read -p "Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
             exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON"
+        elif [[ "$project_input" =~ ^[Ee]$ ]]; then
+            echo "============================================================"
+            echo "📁 UPLOAD GOOGLE DRIVE (FILE BEBAS)"
+            echo "============================================================"
+            read -e -p "Masukkan Path File: " FILE_PATH
+            read -p "Masukkan Nama Folder: " FOLDER_NAME
+            
+            if [ ! -f "$FILE_PATH" ]; then
+                echo "❌ File tidak ditemukan: $FILE_PATH"
+                exit 1
+            fi
+            
+            CONFIG_FILE="${SCRIPT_DIR}/config.json"
+            GDRIVE_FOLDER_ID=$(jq -r ".types[\"HRM Apps\"].gdrive_folder_id // empty" "$CONFIG_FILE")
+            ENV_FILE="${SCRIPT_DIR}/.env"
+            GDRIVE_CRED_PATH=""
+            if [ -f "$ENV_FILE" ]; then
+                RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
+                if [ -n "$RAW_CRED_PATH" ]; then GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"; fi
+            fi
+            if [ -z "$GDRIVE_FOLDER_ID" ] || [ -z "$GDRIVE_CRED_PATH" ]; then
+                echo "❌ Error: Konfigurasi GDrive tidak lengkap (cek config.json atau .env)."
+                exit 1
+            fi
+            python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$FILE_PATH" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$FOLDER_NAME" ""
+            exit 0
+        elif [[ "$project_input" =~ ^[Ff]$ ]]; then
+            echo "============================================================"
+            echo "🍎 SUBMIT TESTFLIGHT (FILE IPA)"
+            echo "============================================================"
+            read -e -p "Masukkan Path File (.ipa): " FILE_PATH
+            
+            if [ ! -f "$FILE_PATH" ]; then
+                echo "❌ File tidak ditemukan: $FILE_PATH"
+                exit 1
+            fi
+            
+            echo "🔍 Mengekstrak Bundle ID dari file IPA..."
+            BUNDLE_ID=$(unzip -p "$FILE_PATH" Payload/*.app/Info.plist | plutil -extract CFBundleIdentifier raw -)
+            if [ -z "$BUNDLE_ID" ]; then
+                echo "❌ Gagal mengekstrak Bundle ID dari IPA. Pastikan file IPA valid."
+                exit 1
+            fi
+            echo "✅ Bundle ID: $BUNDLE_ID"
+            
+            ruby "${SCRIPT_DIR}/scripts/upload_to_testflight.rb" "$FILE_PATH" "$BUNDLE_ID" "Custom App" "Standalone"
+            exit 0
+        elif [[ "$project_input" =~ ^[Gg]$ ]]; then
+            echo "============================================================"
+            echo "🍎 SUBMIT APPSTORE REVIEW (FILE IPA)"
+            echo "============================================================"
+            read -e -p "Masukkan Path File (.ipa) untuk diekstrak Bundle ID: " FILE_PATH
+            
+            if [ ! -f "$FILE_PATH" ]; then
+                echo "❌ File tidak ditemukan: $FILE_PATH"
+                exit 1
+            fi
+            
+            echo "🔍 Mengekstrak Bundle ID dari file IPA..."
+            BUNDLE_ID=$(unzip -p "$FILE_PATH" Payload/*.app/Info.plist | plutil -extract CFBundleIdentifier raw -)
+            if [ -z "$BUNDLE_ID" ]; then
+                echo "❌ Gagal mengekstrak Bundle ID dari IPA. Pastikan file IPA valid."
+                exit 1
+            fi
+            echo "✅ Bundle ID: $BUNDLE_ID"
+            
+            ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "standalone" "Standalone" "$BUNDLE_ID"
+            exit 0
+        elif [[ "$project_input" =~ ^[Hh]$ ]]; then
+            echo "============================================================"
+            echo "🍎 SUBMIT PLAYSTORE (FILE AAB)"
+            echo "============================================================"
+            read -e -p "Masukkan Path File (.aab): " FILE_PATH
+            
+            if [ ! -f "$FILE_PATH" ]; then
+                echo "❌ File tidak ditemukan: $FILE_PATH"
+                exit 1
+            fi
+            
+            echo "🔍 Mengekstrak Package Name dari file AAB..."
+            # Cari aapt2 di Android SDK
+            AAPT2_PATH=$(find ~/Library/Android/sdk/build-tools -name "aapt2" 2>/dev/null | sort -r | head -n 1)
+            
+            if [ -z "$AAPT2_PATH" ]; then
+                echo "❌ aapt2 tidak ditemukan di Android SDK (~/Library/Android/sdk/build-tools). Tidak dapat mengekstrak Package Name."
+                exit 1
+            fi
+            
+            PACKAGE_NAME=$("$AAPT2_PATH" dump packagename "$FILE_PATH" 2>/dev/null | tr -d '\n' | tr -d '\r')
+            if [ -z "$PACKAGE_NAME" ]; then
+                echo "❌ Gagal mengekstrak Package Name dari AAB. Pastikan file AAB valid."
+                exit 1
+            fi
+            echo "✅ Package Name: $PACKAGE_NAME"
+            
+            read -p "Masukkan track rilis (default: internal): " TRACK_INPUT
+            TRACK="${TRACK_INPUT:-internal}"
+            
+            ruby "${SCRIPT_DIR}/scripts/upload_to_playstore.rb" "$FILE_PATH" "$PACKAGE_NAME" "$TRACK"
+            exit 0
         fi
 
         

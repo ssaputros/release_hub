@@ -27,20 +27,29 @@ if run_id.nil? || run_id.empty?
   exit 1
 end
 
-app_data = projects[run_id]
-unless app_data
-  puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
-  exit 1
-end
-
-project_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
-
-if app_type.nil? || app_type.empty?
-  if project_types.length > 1
-    puts "❌ Error: Parameter App Type kosong."
+if run_id == "standalone"
+  app_data = {
+    'Project' => {
+      'Project Name' => "Standalone App",
+      'Type' => "Standalone"
+    }
+  }
+  app_type = "Standalone"
+  project_types = ["Standalone"]
+else
+  app_data = projects[run_id]
+  unless app_data
+    puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
     exit 1
-  else
-    app_type = project_types.first
+  end
+  project_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
+  if app_type.nil? || app_type.empty?
+    if project_types.length > 1
+      puts "❌ Error: Parameter App Type kosong."
+      exit 1
+    else
+      app_type = project_types.first
+    end
   end
 end
 

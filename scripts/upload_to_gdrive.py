@@ -117,7 +117,7 @@ def upload_file(file_path, parent_folder_id, credentials_path, project_name, app
         service = build('drive', 'v3', credentials=creds)
         
         # Dapatkan ID subfolder tujuan
-        target_folder_name = f"{project_name} ( {app_name} )"
+        target_folder_name = f"{project_name} ( {app_name} )" if app_name else project_name
         target_folder_id = get_or_create_subfolder(service, parent_folder_id, target_folder_name)
 
         file_name = os.path.basename(file_path)
