@@ -2,9 +2,10 @@
 
 # Inisialisasi variabel
 RUN_ID="$1"
+TYPE_CLEAN="$2"
 
-if [ -z "$RUN_ID" ]; then
-    echo "⚠️ Penggunaan: ./init_appstore.sh <project_id>"
+if [ -z "$RUN_ID" ] || [ -z "$TYPE_CLEAN" ]; then
+    echo "⚠️ Penggunaan: ./init_appstore.sh <project_id> <type_clean>"
     exit 1
 fi
 
@@ -18,18 +19,24 @@ if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
         exit 1
     fi
     
-    APP_NAME=$(jq -r ".\"$RUN_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
-    TYPE=$(jq -r ".\"$RUN_ID\".Project.Type // empty" "$PROJECT_FILE")
+    APP_NAME=$(jq -r ".\"$RUN_ID\".Project.\"App Name\".\"$TYPE_CLEAN\" // empty" "$PROJECT_FILE")
+    # Fallback jika ternyata App Name masih format lama (string langsung)
+    if [ -z "$APP_NAME" ] || [ "$APP_NAME" == "null" ]; then
+        APP_NAME=$(jq -r ".\"$RUN_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
+    fi
     
-    PREFIX=""
-    if [ -f "$CONFIG_FILE" ]; then
-        PREFIX=$(jq -r ".types[\"$TYPE\"].prefix // empty" "$CONFIG_FILE")
+    APP_PACKAGE_NAME=$(jq -r ".\"$RUN_ID\".\"Bundle ID\".\"$TYPE_CLEAN\" // empty" "$PROJECT_FILE")
+    # Fallback generate package name
+    if [ -z "$APP_PACKAGE_NAME" ] || [ "$APP_PACKAGE_NAME" == "null" ]; then
+        PREFIX=""
+        if [ -f "$CONFIG_FILE" ]; then
+            PREFIX=$(jq -r ".types[\"$TYPE_CLEAN\"].prefix // empty" "$CONFIG_FILE")
+        fi
+        if [ -z "$PREFIX" ]; then
+            PREFIX="com.example"
+        fi
+        APP_PACKAGE_NAME="${PREFIX}.${RUN_ID}"
     fi
-
-    if [ -z "$PREFIX" ]; then
-        PREFIX="com.example"
-    fi
-    APP_PACKAGE_NAME="${PREFIX}.${RUN_ID}"
 else
     echo "❌ Error: jq tidak ditemukan atau projects.json tidak valid."
     exit 1

@@ -143,7 +143,8 @@ File.write(pubspec_path, new_pubspec_content)
 puts "📝 Berhasil memperbarui pubspec.yaml ke: #{new_version}"
 
 # B. Update .env file if it exists (for Hrm Apps environment bump)
-env_path = File.join(project_location, ".env")
+if app_type != "Approval Apps"
+  env_path = File.join(project_location, ".env")
 if File.exist?(env_path)
   env_content = File.read(env_path)
   # Look for APP_VERSION line (match double/single quotes or raw values)
@@ -168,6 +169,7 @@ if File.exist?(env_path)
       puts "📝 Berhasil menulis ulang APP_VERSION di .env ke: #{new_line.split('=').last.strip}"
     end
   end
+end
 end
 
 puts "\n✅ Selesai melakukan bump version!"

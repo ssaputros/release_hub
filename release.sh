@@ -209,6 +209,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "A) Record Playwright UI"
         echo "B) Download Play Store Metadata"
         echo "C) Download App Store Metadata"
+        echo "D) Tambah Project Baru"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -223,7 +224,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         done <<< "$projects_data"
         
         echo "------------------------------------------------------------"
-        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C): "
+        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D): "
         read -r project_input
         if [[ "$project_input" =~ ^[Aa]$ ]]; then
             echo "============================================================"
@@ -244,6 +245,18 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         elif [[ "$project_input" =~ ^[Cc]$ ]]; then
             ruby "${SCRIPT_DIR}/scripts/download_appstore_metadata.rb"
             exit 0
+        elif [[ "$project_input" =~ ^[Dd]$ ]]; then
+            echo "============================================================"
+            echo "➕ TAMBAH PROJECT BARU"
+            echo "============================================================"
+            read -e -i "${PROJECT}" -p "Nama Project: " PROJECT
+            read -e -i "${REGION:-Indonesia}" -p "Region: " REGION
+            read -e -i "${APP_NAME}" -p "Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix Approval/HRIS): " APP_NAME
+            read -e -i "${TYPE:-HRM Apps}" -p "Tipe Aplikasi (pisahkan dgn koma, misal 'HRM Apps, Approval Apps'): " TYPE
+            read -e -i "${BASE_URL}" -p "Base URL: " BASE_URL
+            read -e -i "${DATABASE}" -p "Database: " DATABASE
+            read -e -i "${ICON}" -p "Icon (URL Google Drive): " ICON
+            exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON"
         fi
 
         
@@ -393,6 +406,33 @@ fi
 
 # Jika menggunakan --project, tambahkan ke projects.json
 if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
+    while true; do
+        echo "============================================================"
+        echo "➕ KONFIRMASI DATA PROJECT BARU"
+        echo "============================================================"
+        echo "1. Nama Project : $PROJECT"
+        echo "2. Region       : $REGION"
+        echo "3. Base Nama App: $APP_NAME"
+        echo "4. Tipe Aplikasi: $TYPE"
+        echo "5. Base URL     : $BASE_URL"
+        echo "6. Database     : $DATABASE"
+        echo "7. Icon         : $ICON"
+        echo "------------------------------------------------------------"
+        read -p "Apakah data di atas sudah benar? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            break
+        else
+            echo "Silakan edit data berikut (tekan Enter untuk menyimpan nilai lama jika tidak diubah):"
+            read -e -i "${PROJECT}" -p "Nama Project: " PROJECT
+            read -e -i "${REGION:-Indonesia}" -p "Region: " REGION
+            read -e -i "${APP_NAME}" -p "Base Nama Aplikasi: " APP_NAME
+            read -e -i "${TYPE:-HRM Apps}" -p "Tipe Aplikasi: " TYPE
+            read -e -i "${BASE_URL}" -p "Base URL: " BASE_URL
+            read -e -i "${DATABASE}" -p "Database: " DATABASE
+            read -e -i "${ICON}" -p "Icon (URL Google Drive): " ICON
+            echo ""
+        fi
+    done
     # Generate ID dari Project Name
     ID=$(generate_id "$PROJECT")
     if [ -z "$ID" ]; then
@@ -401,13 +441,28 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
     fi
     BRANCH="$ID"
     BRANCH_JSON="{"
+    APP_NAME_JSON="{"
     IFS=',' read -ra ADDR <<< "$TYPE"
     for i in "${!ADDR[@]}"; do
         type_clean=$(echo "${ADDR[$i]}" | xargs)
         BRANCH_JSON+="\"$type_clean\": \"$BRANCH\""
-        if [ $i -lt $((${#ADDR[@]}-1)) ]; then BRANCH_JSON+=", "; fi
+        
+        if [[ "$type_clean" == "Approval Apps" ]]; then
+            APP_NAME_VAL="${APP_NAME} Approval"
+        elif [[ "$type_clean" == "HRM Apps" ]]; then
+            APP_NAME_VAL="${APP_NAME} HRIS"
+        else
+            APP_NAME_VAL="${APP_NAME}"
+        fi
+        APP_NAME_JSON+="\"$type_clean\": \"$APP_NAME_VAL\""
+
+        if [ $i -lt $((${#ADDR[@]}-1)) ]; then 
+            BRANCH_JSON+=", "
+            APP_NAME_JSON+=", "
+        fi
     done
     BRANCH_JSON+="}"
+    APP_NAME_JSON+="}"
 
     if [ -n "$BASE_URL" ]; then
         RAW_URL=$(echo "$BASE_URL" | tr ',' ' ' | tr ' ' '\n' | grep '\.' | tail -n 1)
@@ -423,12 +478,11 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
           --argjson branch "$BRANCH_JSON" \
           --arg pn "$PROJECT" \
           --arg r "$REGION" \
-          --arg an "$APP_NAME" \
+          --argjson an "$APP_NAME_JSON" \
           --arg t "$TYPE" \
           --arg bu "$BASE_URL" \
           --arg db "$DATABASE" \
           --arg ic "$ICON" \
-          --arg n "$NOTES" \
           '{
             ($id): {
               "Branch": $branch,
@@ -439,8 +493,7 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
                 "Type": $t,
                 "Base URL": $bu,
                 "Database": $db,
-                "Icon": $ic,
-                "Notes": $n
+                "Icon": $ic
               }
             }
           }')
@@ -541,7 +594,7 @@ upload_testflight() {
     fi
 
     if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
-        bash "${SCRIPT_DIR}/init_appstore.sh" "$t_id" || { echo "❌ Proses init appstore gagal!"; exit 1; }
+        bash "${SCRIPT_DIR}/init_appstore.sh" "$t_id" "$t_clean" || { echo "❌ Proses init appstore gagal!"; exit 1; }
     fi
 }
 
@@ -562,12 +615,6 @@ execute_action() {
         case "$action" in
             4) 
                 node "${SCRIPT_DIR}/automation/update_dashboard_id.js" "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
-                continue
-                ;;
-            6) 
-                if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
-                    bash "${SCRIPT_DIR}/init_appstore.sh" "$TARGET_ID" || { echo "❌ Proses init appstore gagal!"; exit 1; }
-                fi
                 continue
                 ;;
             15) 
@@ -615,6 +662,10 @@ execute_action() {
             
             case "$action" in
                 1) 
+                   ICON_URL=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
+                   if [ -n "$ICON_URL" ]; then
+                       bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
+                   fi
                    bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
                    script_file="${SCRIPT_DIR}/scripts/project_types/setup_${type_slug}.sh"
                    if [ -f "$script_file" ]; then
@@ -631,6 +682,11 @@ execute_action() {
                    rm -f Podfile.lock
                    pod install || { echo "❌ pod install gagal!"; exit 1; }
                    cd "${SCRIPT_DIR}" || exit 1
+                   ;;
+                6) 
+                   if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
+                       bash "${SCRIPT_DIR}/init_appstore.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses init appstore gagal!"; exit 1; }
+                   fi
                    ;;
                 7) ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$type_clean" || echo "❌ push_appstore_metadata.rb gagal dijalankan." ;;
                 8) ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$type_clean" || echo "❌ setup_appstore_info.rb gagal dijalankan." ;;

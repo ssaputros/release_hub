@@ -16,8 +16,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://smkgenus.hash-008.com",
       "Database": "smkgenus-new",
-      "Icon": "https://drive.google.com/open?id=1RXPYUaGmlZrDOslpTXc8BT6mNfwY9uOl",
-      "Notes": ""
+      "Icon": "https://drive.google.com/open?id=1RXPYUaGmlZrDOslpTXc8BT6mNfwY9uOl"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.smkgemanusantara"
@@ -43,8 +42,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://sinergiselarastelematika.hashmicro.co",
       "Database": "SSTdbLive",
-      "Icon": "https://drive.google.com/open?id=1bOCvsDE5qNiZmpljt1RL_AXGfpALaoyD",
-      "Notes": ""
+      "Icon": "https://drive.google.com/open?id=1bOCvsDE5qNiZmpljt1RL_AXGfpALaoyD"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.sst"
@@ -70,8 +68,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://netzsch.hashmicro.co",
       "Database": "netzsch-live",
-      "Icon": "https://drive.google.com/open?id=1ULVT9zlU-iXUpN2GHFyarq00qYYguu08",
-      "Notes": ""
+      "Icon": "https://drive.google.com/open?id=1ULVT9zlU-iXUpN2GHFyarq00qYYguu08"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.netzsch"
@@ -97,8 +94,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://progressbicycle.hash-029.com",
       "Database": "pbc-260511",
-      "Icon": "https://drive.google.com/open?id=1e3TVtGRMn5Oepe88NzcW0H3NC81BlqqU",
-      "Notes": ""
+      "Icon": "https://drive.google.com/open?id=1e3TVtGRMn5Oepe88NzcW0H3NC81BlqqU"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.progressbicyclecorporation"
@@ -127,8 +123,7 @@
       "Type": "Approval Apps, HRM Apps",
       "Base URL": "https://bumiakigroup.hashmicro.co",
       "Database": "bumiakigroupdb",
-      "Icon": "",
-      "Notes": ""
+      "Icon": ""
     },
     "Package ID": {
       "Approval Apps": "com.hashmicro.approval.bumiaki",
@@ -159,8 +154,7 @@
       "Type": "Approval Apps, HRM Apps",
       "Base URL": "https://mitra-swalayan.hash-009.com",
       "Database": "mitra-training",
-      "Icon": "https://drive.google.com/open?id=1JeHwUYus7CdGFopZQLfagVjw5rAX1q-y",
-      "Notes": ""
+      "Icon": "https://drive.google.com/open?id=1JeHwUYus7CdGFopZQLfagVjw5rAX1q-y"
     },
     "Package ID": {
       "Approval Apps": "com.hashmicro.approval.mitraswa",
@@ -188,8 +182,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://borneo-famili.hash-009.com",
       "Database": "borneoscore22",
-      "Icon": "https://drive.google.com/open?id=1HGwyH6CZ-xMHxJPtTDghYEd1mPiptYQr",
-      "Notes": ""
+      "Icon": "https://drive.google.com/open?id=1HGwyH6CZ-xMHxJPtTDghYEd1mPiptYQr"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.bft"
@@ -215,8 +208,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://globalmandiri.hashmicro.co",
       "Database": "globalmandiri-live",
-      "Icon": "",
-      "Notes": ""
+      "Icon": ""
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.globalmandiri"
@@ -245,8 +237,7 @@
       "Type": "Approval Apps, HRM Apps",
       "Base URL": "https://zio-pakartek.hashmicro.co",
       "Database": "zio-pakartek-live",
-      "Icon": "https://drive.google.com/open?id=1txmDI-HBLJ-aoBk0fWa8huxJX7rTjPAp",
-      "Notes": "LMS, Training, Career Transition"
+      "Icon": "https://drive.google.com/open?id=1txmDI-HBLJ-aoBk0fWa8huxJX7rTjPAp"
     },
     "Package ID": {
       "Approval Apps": "com.hashmicro.approval.zio",
@@ -255,6 +246,37 @@
     "Bundle ID": {
       "Approval Apps": "com.hashmicro.approval.zio",
       "HRM Apps": "com.hashmicro.eva.zio"
+    }
+  },
+  "globalmultiprotechnology": {
+    "Branch": {
+      "Approval Apps": "globalmultiprotechnology",
+      "HRM Apps": "globalmultiprotechnology"
+    },
+    "Play Console Dashboard": {
+      "Approval Apps": "",
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Global Multipro Technology",
+      "Region": "Indonesia",
+      "App Name": {
+        "Approval Apps": "GMT Approval",
+        "HRM Apps": "GMT HRIS"
+      },
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://gmtgroup.hashmicro.co",
+      "Database": "gmtgroup-live",
+      "Icon": "https://drive.google.com/open?id=1_7qeMpglBbBqDkqAJ7gvTUMNB0EenNhF"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.approval.globalmultiprotechnology",
+      "HRM Apps": "com.hashmicro.eva.globalmultiprotechnology"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.approval.globalmultiprotechnology",
+      "HRM Apps": "com.hashmicro.eva.globalmultiprotechnology"
     }
   }
 }
