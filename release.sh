@@ -209,7 +209,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "A) Record Playwright UI"
         echo "B) Download Play Store Metadata"
         echo "C) Download App Store Metadata"
-        echo "D) Tambah Project Baru"
+        echo "D) Create New Project"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -247,15 +247,15 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             exit 0
         elif [[ "$project_input" =~ ^[Dd]$ ]]; then
             echo "============================================================"
-            echo "➕ TAMBAH PROJECT BARU"
+            echo "➕ CREATE NEW PROJECT"
             echo "============================================================"
-            read -e -i "${PROJECT}" -p "Nama Project: " PROJECT
-            read -e -i "${REGION:-Indonesia}" -p "Region: " REGION
-            read -e -i "${APP_NAME}" -p "Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix Approval/HRIS): " APP_NAME
-            read -e -i "${TYPE:-HRM Apps}" -p "Tipe Aplikasi (pisahkan dgn koma, misal 'HRM Apps, Approval Apps'): " TYPE
-            read -e -i "${BASE_URL}" -p "Base URL: " BASE_URL
-            read -e -i "${DATABASE}" -p "Database: " DATABASE
-            read -e -i "${ICON}" -p "Icon (URL Google Drive): " ICON
+            read -p "Nama Project [${PROJECT}]: " IN_PROJECT; PROJECT="${IN_PROJECT:-$PROJECT}"
+            read -p "Region [${REGION:-Indonesia}]: " IN_REGION; REGION="${IN_REGION:-${REGION:-Indonesia}}"
+            read -p "Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix) [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
+            read -p "Tipe Aplikasi (pisahkan dgn koma) [${TYPE:-HRM Apps}]: " IN_TYPE; TYPE="${IN_TYPE:-${TYPE:-HRM Apps}}"
+            read -p "Base URL [${BASE_URL}]: " IN_BASE_URL; BASE_URL="${IN_BASE_URL:-$BASE_URL}"
+            read -p "Database [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
+            read -p "Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
             exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON"
         fi
 
@@ -357,15 +357,15 @@ fi
                 echo "============================================================"
                 echo " 1) Setup Konfigurasi"
                 echo " 2) Bump Version"
-                echo " 3) Pod Install"
+                echo " 3) Clean & Pod Install"
                 echo " 4) Update Play Console Dashboard ID"
                 echo " 5) Full Deploy iOS (Otomatis jalankan 6-13)"
                 echo " 6) Create Appstore"
                 echo " 7) Push Metadata (App Store)"
                 echo " 8) Complete Appstore Info"
                 echo " 9) Build IPA"
-                echo "10) Upload IPA (Ke Google Drive)"
-                echo "11) Submit Testflight"
+                echo "10) Upload IPA & Submit Testflight"
+                echo "11) Submit Testflight (Tanpa Upload)"
                 echo "12) Submit Appstore Review"
                 echo "13) Request Unlisted Distribution"
                 echo "14) Full Deploy Android (Otomatis jalankan 15-22)"
@@ -423,13 +423,13 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
             break
         else
             echo "Silakan edit data berikut (tekan Enter untuk menyimpan nilai lama jika tidak diubah):"
-            read -e -i "${PROJECT}" -p "Nama Project: " PROJECT
-            read -e -i "${REGION:-Indonesia}" -p "Region: " REGION
-            read -e -i "${APP_NAME}" -p "Base Nama Aplikasi: " APP_NAME
-            read -e -i "${TYPE:-HRM Apps}" -p "Tipe Aplikasi: " TYPE
-            read -e -i "${BASE_URL}" -p "Base URL: " BASE_URL
-            read -e -i "${DATABASE}" -p "Database: " DATABASE
-            read -e -i "${ICON}" -p "Icon (URL Google Drive): " ICON
+            read -p "Nama Project [${PROJECT}]: " IN_PROJECT; PROJECT="${IN_PROJECT:-$PROJECT}"
+            read -p "Region [${REGION:-Indonesia}]: " IN_REGION; REGION="${IN_REGION:-${REGION:-Indonesia}}"
+            read -p "Base Nama Aplikasi [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
+            read -p "Tipe Aplikasi [${TYPE:-HRM Apps}]: " IN_TYPE; TYPE="${IN_TYPE:-${TYPE:-HRM Apps}}"
+            read -p "Base URL [${BASE_URL}]: " IN_BASE_URL; BASE_URL="${IN_BASE_URL:-$BASE_URL}"
+            read -p "Database [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
+            read -p "Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
             echo ""
         fi
     done
@@ -677,8 +677,19 @@ execute_action() {
                    ;;
                 2) ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
                 3) 
+                   RAW_LOCATION=$(jq -r ".types[\"$PRIMARY_TYPE\"].location // empty" "$CONFIG_FILE")
+                   APP_LOCATION=$(eval echo "$RAW_LOCATION")
+                   if [ -z "$APP_LOCATION" ] || [ ! -d "$APP_LOCATION" ]; then
+                       echo "❌ Folder project untuk tipe $PRIMARY_TYPE tidak ditemukan ($APP_LOCATION)"
+                       exit 1
+                   fi
+                   
+                   echo "🧹 Menjalankan fvm flutter clean & pub get di $APP_LOCATION..."
+                   cd "$APP_LOCATION" || exit 1
+                   fvm flutter clean || { echo "❌ fvm flutter clean gagal!"; exit 1; }
+                   fvm flutter pub get || { echo "❌ fvm flutter pub get gagal!"; exit 1; }
                    echo "📦 Menjalankan pod install untuk iOS..."
-                   cd "${SCRIPT_DIR}/ios" || { echo "❌ Folder ios tidak ditemukan!"; exit 1; }
+                   cd ios || { echo "❌ Folder ios tidak ditemukan di $APP_LOCATION!"; exit 1; }
                    rm -f Podfile.lock
                    pod install || { echo "❌ pod install gagal!"; exit 1; }
                    cd "${SCRIPT_DIR}" || exit 1
@@ -698,26 +709,12 @@ execute_action() {
                    fi
                    ;;
                 10) 
-                   echo "🚀 MENGUNGGAH IPA KE GOOGLE DRIVE: $APP_NAME"
-                   GDRIVE_FOLDER_ID=""
-                   if [ -f "$CONFIG_FILE" ]; then GDRIVE_FOLDER_ID=$(jq -r ".types[\"$PRIMARY_TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE"); fi
-                   ENV_FILE="${SCRIPT_DIR}/.env"
-                   GDRIVE_CRED_PATH=""
-                   if [ -f "$ENV_FILE" ]; then
-                       RAW_CRED_PATH=$(grep '^GDRIVE_CREDENTIALS_PATH=' "$ENV_FILE" | cut -d '"' -f 2)
-                       if [ -n "$RAW_CRED_PATH" ]; then GDRIVE_CRED_PATH="${SCRIPT_DIR}/${RAW_CRED_PATH}"; fi
-                   fi
-                   if [ -z "$GDRIVE_FOLDER_ID" ] || [ -z "$GDRIVE_CRED_PATH" ]; then echo "❌ Error: Konfigurasi GDrive tidak lengkap."; exit 1; fi
-                   LATEST_IPA=$(find "$TARGET_DIR" -name "*.ipa" -type f -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)
-                   if [ -n "$LATEST_IPA" ]; then
-                       python3 "${SCRIPT_DIR}/scripts/upload_to_gdrive.py" "$LATEST_IPA" "$GDRIVE_FOLDER_ID" "$GDRIVE_CRED_PATH" "$PROJECT_NAME" "$APP_NAME"
-                   else
-                       echo "⚠️ File IPA tidak ditemukan di $TARGET_DIR"; exit 1
-                   fi
+                   echo "🍎 MENGUNGGAH KE APP STORE CONNECT / TESTFLIGHT: $APP_NAME"
+                   upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
                    ;;
                 11) 
-                   echo "🍎 MENGUNGGAH KE TESTFLIGHT: $APP_NAME"
-                   upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
+                   echo "🍎 SUBMIT TESTFLIGHT (TANPA UPLOAD): $APP_NAME"
+                   SKIP_UPLOAD=true upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
                    ;;
                 12) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
                 13) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
@@ -771,7 +768,7 @@ for CURRENT_ACTION in "${ACTION_ARRAY[@]}"; do
         echo "============================================================"
         echo "▶️ MENGEKSEKUSI OPSI: 5 (FULL DEPLOY iOS)"
         echo "============================================================"
-        for sub_action in 6 7 8 9 10 11 12 13; do
+        for sub_action in 6 7 8 9 10 12 13; do
             execute_action "$sub_action"
         done
     elif [ "$CURRENT_ACTION" = "14" ]; then

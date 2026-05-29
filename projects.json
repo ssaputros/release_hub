@@ -248,35 +248,23 @@
       "HRM Apps": "com.hashmicro.eva.zio"
     }
   },
-  "globalmultiprotechnology": {
+  
+  "sti": {
     "Branch": {
-      "Approval Apps": "globalmultiprotechnology",
-      "HRM Apps": "globalmultiprotechnology"
+      "HRM Apps": "sti-break",
+      "Approval Apps": "sti"
     },
-    "Play Console Dashboard": {
-      "Approval Apps": "",
-      "HRM Apps": ""
-    },
-    "Firebase Project": "",
     "Project": {
-      "Project Name": "Global Multipro Technology",
+      "Project Name": "Sumatra Timur Indonesia",
       "Region": "Indonesia",
       "App Name": {
-        "Approval Apps": "GMT Approval",
-        "HRM Apps": "GMT HRIS"
+        "HRM Apps": "My STI",
+        "Approval Apps": "My STI Approval"
       },
-      "Type": "Approval Apps, HRM Apps",
-      "Base URL": "https://gmtgroup.hashmicro.co",
-      "Database": "gmtgroup-live",
-      "Icon": "https://drive.google.com/open?id=1_7qeMpglBbBqDkqAJ7gvTUMNB0EenNhF"
-    },
-    "Package ID": {
-      "Approval Apps": "com.hashmicro.approval.globalmultiprotechnology",
-      "HRM Apps": "com.hashmicro.eva.globalmultiprotechnology"
-    },
-    "Bundle ID": {
-      "Approval Apps": "com.hashmicro.approval.globalmultiprotechnology",
-      "HRM Apps": "com.hashmicro.eva.globalmultiprotechnology"
+      "Type": "HRM Apps, Approval Apps",
+      "Base URL": "https://sti.hashmicro.co",
+      "Database": "sumatra-timur-live",
+      "Icon": ""
     }
   }
 }
