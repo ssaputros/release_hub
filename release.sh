@@ -244,6 +244,8 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "F) Submit Testflight (File IPA)"
         echo "G) Submit Appstore Review (File IPA)"
         echo "H) Submit Playstore (File AAB)"
+        echo "I) Import Project from Branch (Reverse Setup)"
+        echo "J) Login Google Drive"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -258,7 +260,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         done <<< "$projects_data"
         
         echo "------------------------------------------------------------"
-        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H): "
+        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J): "
         read -r project_input
         if [[ "$project_input" =~ ^[Aa]$ ]]; then
             echo "============================================================"
@@ -390,6 +392,12 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             TRACK="${TRACK_INPUT:-internal}"
             
             ruby "${SCRIPT_DIR}/scripts/upload_to_playstore.rb" "$FILE_PATH" "$PACKAGE_NAME" "$TRACK"
+            exit 0
+        elif [[ "$project_input" =~ ^[Ii]$ ]]; then
+            ruby "${SCRIPT_DIR}/scripts/import_project.rb"
+            exit 0
+        elif [[ "$project_input" =~ ^[Jj]$ ]]; then
+            python3 "${SCRIPT_DIR}/scripts/generate_token.py"
             exit 0
         fi
 
