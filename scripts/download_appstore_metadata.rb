@@ -27,6 +27,7 @@ run_id = ARGV[0]
 app_type = ARGV[1]
 
 manual_bundle_id = nil
+manual_template_type = nil
 
 if run_id.nil? || run_id.empty?
   puts "============================================================"
@@ -56,6 +57,13 @@ if run_id.nil? || run_id.empty?
       puts "❌ Bundle ID tidak boleh kosong."
       exit 1
     end
+    
+    print "Save as template type (misal: HRM Apps, Approval Apps): "
+    manual_template_type = $stdin.gets.chomp.strip
+    if manual_template_type.empty?
+      puts "❌ Tipe template tidak boleh kosong."
+      exit 1
+    end
   else
     choice_idx = choice.to_i - 1
     if choice_idx >= 0 && choice_idx < available_projects.length
@@ -69,13 +77,15 @@ end
 
 if manual_bundle_id
   bundle_id = manual_bundle_id
-  metadata_ios_path = File.join(project_root, "store_listings", "Manual", bundle_id, "ios")
+  folder_type = manual_template_type == "HRM Apps" ? "Hrm Apps" : manual_template_type
+  metadata_ios_path = File.join(project_root, "store_listings", folder_type, "ios")
   FileUtils.mkdir_p(metadata_ios_path) unless File.directory?(metadata_ios_path)
   
   puts "\n============================================================"
   puts "ℹ️ TARGET DOWNLOAD APP STORE METADATA"
   puts "============================================================"
   puts "Bundle ID      : #{bundle_id}"
+  puts "Template Type  : #{manual_template_type}"
   puts "Metadata Path  : #{metadata_ios_path}"
   puts "============================================================\n"
 else
