@@ -249,6 +249,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "H) Submit Playstore (File AAB)"
         echo "I) Import Project from Branch (Reverse Setup)"
         echo "J) Login Google Drive"
+        echo "K) Push Metadata (App Store) Manual"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -297,7 +298,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             read -p "7. Branch Name (Nama branch di Git) [${BRANCH_NAME:-Sama dengan Project Key}]: " IN_BRANCH_NAME; BRANCH_NAME="${IN_BRANCH_NAME:-$BRANCH_NAME}"
             read -p "8. Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix) [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
             read -p "9. Firebase Project (misal: hashmicro-production-17, kosongkan jika tidak ada) [${FIREBASE_PROJECT}]: " IN_FIREBASE_PROJECT; FIREBASE_PROJECT="${IN_FIREBASE_PROJECT:-$FIREBASE_PROJECT}"
-            read -p "10. Icon URL (Link Google Drive, kosongkan jika belum ada) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
+            read -p "10. Icon (URL GDrive / Path Lokal, kosongkan jika belum ada) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
             exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON" --project-key "$PROJECT_KEY" --branch-name "$BRANCH_NAME" --firebase-project "$FIREBASE_PROJECT"
         elif [[ "$project_input" =~ ^[Ee]$ ]]; then
             echo "============================================================"
@@ -404,6 +405,9 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             exit 0
         elif [[ "$project_input" =~ ^[Jj]$ ]]; then
             python3 "${SCRIPT_DIR}/scripts/generate_token.py"
+            exit 0
+        elif [[ "$project_input" =~ ^[Kk]$ ]]; then
+            ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "manual"
             exit 0
         fi
 
@@ -583,7 +587,7 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
             read -p "7. Branch Name [${BRANCH_NAME}]: " IN_BRANCH_NAME; BRANCH_NAME="${IN_BRANCH_NAME:-$BRANCH_NAME}"
             read -p "8. Base Nama Aplikasi [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
             read -p "9. Firebase Project [${FIREBASE_PROJECT}]: " IN_FIREBASE_PROJECT; FIREBASE_PROJECT="${IN_FIREBASE_PROJECT:-$FIREBASE_PROJECT}"
-            read -p "10. Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
+            read -p "10. Icon (URL GDrive / Path Lokal) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
             echo ""
         fi
     done

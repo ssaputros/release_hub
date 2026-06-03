@@ -18,16 +18,23 @@ if [ -z "$ICON_URL" ]; then
     exit 0
 fi
 
-echo "⬇️ Mengunduh icon dari: $ICON_URL"
-
-# Cek apakah ini URL Google Drive
-if [[ "$ICON_URL" == *"drive.google.com"* ]]; then
-    # Ekstrak ID dari URL Google Drive
-    FILE_ID=$(echo "$ICON_URL" | sed -E 's/.*(id=|d\/)([a-zA-Z0-9_-]+).*/\2/')
-    DOWNLOAD_URL="https://drive.google.com/uc?export=download&id=${FILE_ID}"
-    curl -sL -o "$RAW_ICON" "$DOWNLOAD_URL"
+if [ -f "$ICON_URL" ]; then
+    echo "⬇️ Menggunakan icon lokal: $ICON_URL"
+    cp "$ICON_URL" "$RAW_ICON"
+elif [ -f "$ROOT_DIR/$ICON_URL" ]; then
+    echo "⬇️ Menggunakan icon lokal: $ROOT_DIR/$ICON_URL"
+    cp "$ROOT_DIR/$ICON_URL" "$RAW_ICON"
 else
-    curl -sL -o "$RAW_ICON" "$ICON_URL"
+    echo "⬇️ Mengunduh icon dari: $ICON_URL"
+    # Cek apakah ini URL Google Drive
+    if [[ "$ICON_URL" == *"drive.google.com"* ]]; then
+        # Ekstrak ID dari URL Google Drive
+        FILE_ID=$(echo "$ICON_URL" | sed -E 's/.*(id=|d\/)([a-zA-Z0-9_-]+).*/\2/')
+        DOWNLOAD_URL="https://drive.google.com/uc?export=download&id=${FILE_ID}"
+        curl -sL -o "$RAW_ICON" "$DOWNLOAD_URL"
+    else
+        curl -sL -o "$RAW_ICON" "$ICON_URL"
+    fi
 fi
 
 if [ ! -s "$RAW_ICON" ]; then
