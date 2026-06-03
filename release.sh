@@ -159,6 +159,9 @@ while [[ "$#" -gt 0 ]]; do
         --database) DATABASE="$2"; shift ;;
         --icon) ICON="$2"; shift ;;
         --notes) NOTES="$2"; shift ;;
+        --project-key) PROJECT_KEY="$2"; shift ;;
+        --branch-name) BRANCH_NAME="$2"; shift ;;
+        --firebase-project) FIREBASE_PROJECT="$2"; shift ;;
         *) 
             # Jika argumen berupa durasi waktu (15m, 1h, 30s)
             if [[ "$1" =~ ^[0-9]+[mhsd]$ ]]; then
@@ -285,14 +288,17 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             echo "============================================================"
             echo "➕ CREATE NEW PROJECT"
             echo "============================================================"
-            read -p "Nama Project [${PROJECT}]: " IN_PROJECT; PROJECT="${IN_PROJECT:-$PROJECT}"
-            read -p "Region [${REGION:-Indonesia}]: " IN_REGION; REGION="${IN_REGION:-${REGION:-Indonesia}}"
-            read -p "Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix) [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
-            read -p "Tipe Aplikasi (pisahkan dgn koma) [${TYPE:-HRM Apps}]: " IN_TYPE; TYPE="${IN_TYPE:-${TYPE:-HRM Apps}}"
-            read -p "Base URL [${BASE_URL}]: " IN_BASE_URL; BASE_URL="${IN_BASE_URL:-$BASE_URL}"
-            read -p "Database [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
-            read -p "Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
-            exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON"
+            read -p "1. Project Key (kunci utama JSON, misal: namaclient) [Auto-generate]: " IN_PROJECT_KEY; PROJECT_KEY="${IN_PROJECT_KEY:-$PROJECT_KEY}"
+            read -p "2. App Types (Pilih: HRM Apps / Approval Apps / Keduanya) [${TYPE:-HRM Apps}]: " IN_TYPE; TYPE="${IN_TYPE:-${TYPE:-HRM Apps}}"
+            read -p "3. Project Name (Nama lengkap client/project, misal: PT Nama Client) [${PROJECT}]: " IN_PROJECT; PROJECT="${IN_PROJECT:-$PROJECT}"
+            read -p "4. Region (misal: Indonesia) [${REGION:-Indonesia}]: " IN_REGION; REGION="${IN_REGION:-${REGION:-Indonesia}}"
+            read -p "5. Base URL (misal: https://namaclient.hashmicro.co) [${BASE_URL}]: " IN_BASE_URL; BASE_URL="${IN_BASE_URL:-$BASE_URL}"
+            read -p "6. Database (Nama database Odoo, misal: namaclient-live) [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
+            read -p "7. Branch Name (Nama branch di Git) [${BRANCH_NAME:-Sama dengan Project Key}]: " IN_BRANCH_NAME; BRANCH_NAME="${IN_BRANCH_NAME:-$BRANCH_NAME}"
+            read -p "8. Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix) [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
+            read -p "9. Firebase Project (misal: hashmicro-production-17, kosongkan jika tidak ada) [${FIREBASE_PROJECT}]: " IN_FIREBASE_PROJECT; FIREBASE_PROJECT="${IN_FIREBASE_PROJECT:-$FIREBASE_PROJECT}"
+            read -p "10. Icon URL (Link Google Drive, kosongkan jika belum ada) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
+            exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON" --project-key "$PROJECT_KEY" --branch-name "$BRANCH_NAME" --firebase-project "$FIREBASE_PROJECT"
         elif [[ "$project_input" =~ ^[Ee]$ ]]; then
             echo "============================================================"
             echo "📁 UPLOAD GOOGLE DRIVE (FILE BEBAS)"
@@ -552,59 +558,91 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
         echo "============================================================"
         echo "➕ KONFIRMASI DATA PROJECT BARU"
         echo "============================================================"
-        echo "1. Nama Project : $PROJECT"
-        echo "2. Region       : $REGION"
-        echo "3. Base Nama App: $APP_NAME"
-        echo "4. Tipe Aplikasi: $TYPE"
+        echo "1. Project Key  : ${PROJECT_KEY:-[Auto-generate]}"
+        echo "2. Tipe Aplikasi: $TYPE"
+        echo "3. Project Name : $PROJECT"
+        echo "4. Region       : $REGION"
         echo "5. Base URL     : $BASE_URL"
         echo "6. Database     : $DATABASE"
-        echo "7. Icon         : $ICON"
+        echo "7. Branch Name  : ${BRANCH_NAME:-[Sama dengan Project Key]}"
+        echo "8. Base Nama App: $APP_NAME"
+        echo "9. Firebase Proj: $FIREBASE_PROJECT"
+        echo "10. Icon        : $ICON"
         echo "------------------------------------------------------------"
         read -p "Apakah data di atas sudah benar? (y/n): " confirm
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
             break
         else
             echo "Silakan edit data berikut (tekan Enter untuk menyimpan nilai lama jika tidak diubah):"
-            read -p "Nama Project [${PROJECT}]: " IN_PROJECT; PROJECT="${IN_PROJECT:-$PROJECT}"
-            read -p "Region [${REGION:-Indonesia}]: " IN_REGION; REGION="${IN_REGION:-${REGION:-Indonesia}}"
-            read -p "Base Nama Aplikasi [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
-            read -p "Tipe Aplikasi [${TYPE:-HRM Apps}]: " IN_TYPE; TYPE="${IN_TYPE:-${TYPE:-HRM Apps}}"
-            read -p "Base URL [${BASE_URL}]: " IN_BASE_URL; BASE_URL="${IN_BASE_URL:-$BASE_URL}"
-            read -p "Database [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
-            read -p "Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
+            read -p "1. Project Key [${PROJECT_KEY}]: " IN_PROJECT_KEY; PROJECT_KEY="${IN_PROJECT_KEY:-$PROJECT_KEY}"
+            read -p "2. Tipe Aplikasi [${TYPE:-HRM Apps}]: " IN_TYPE; TYPE="${IN_TYPE:-${TYPE:-HRM Apps}}"
+            read -p "3. Nama Project [${PROJECT}]: " IN_PROJECT; PROJECT="${IN_PROJECT:-$PROJECT}"
+            read -p "4. Region [${REGION:-Indonesia}]: " IN_REGION; REGION="${IN_REGION:-${REGION:-Indonesia}}"
+            read -p "5. Base URL [${BASE_URL}]: " IN_BASE_URL; BASE_URL="${IN_BASE_URL:-$BASE_URL}"
+            read -p "6. Database [${DATABASE}]: " IN_DATABASE; DATABASE="${IN_DATABASE:-$DATABASE}"
+            read -p "7. Branch Name [${BRANCH_NAME}]: " IN_BRANCH_NAME; BRANCH_NAME="${IN_BRANCH_NAME:-$BRANCH_NAME}"
+            read -p "8. Base Nama Aplikasi [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
+            read -p "9. Firebase Project [${FIREBASE_PROJECT}]: " IN_FIREBASE_PROJECT; FIREBASE_PROJECT="${IN_FIREBASE_PROJECT:-$FIREBASE_PROJECT}"
+            read -p "10. Icon (URL Google Drive) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
             echo ""
         fi
     done
     # Generate ID dari Project Name
-    ID=$(generate_id "$PROJECT")
-    if [ -z "$ID" ]; then
-        ID=$(generate_id "$APP_NAME")
-        if [ -z "$ID" ]; then ID="default_id"; fi
+    if [ -n "$PROJECT_KEY" ]; then
+        ID="$PROJECT_KEY"
+    else
+        ID=$(generate_id "$PROJECT")
+        if [ -z "$ID" ]; then
+            ID=$(generate_id "$APP_NAME")
+            if [ -z "$ID" ]; then ID="default_id"; fi
+        fi
     fi
-    BRANCH="$ID"
+    
+    if [ -n "$BRANCH_NAME" ]; then
+        BRANCH="$BRANCH_NAME"
+    else
+        BRANCH="$ID"
+    fi
+    
     BRANCH_JSON="{"
     APP_NAME_JSON="{"
+    PACKAGE_ID_JSON="{"
+    BUNDLE_ID_JSON="{"
+    PLAY_CONSOLE_JSON="{"
+    
     IFS=',' read -ra ADDR <<< "$TYPE"
     for i in "${!ADDR[@]}"; do
         type_clean=$(echo "${ADDR[$i]}" | xargs)
         BRANCH_JSON+="\"$type_clean\": \"$BRANCH\""
+        PLAY_CONSOLE_JSON+="\"$type_clean\": \"\""
         
         if [[ "$type_clean" == "Approval Apps" ]]; then
             APP_NAME_VAL="${APP_NAME} Approval"
+            PKG_VAL="com.hashmicro.approval.${ID}"
         elif [[ "$type_clean" == "HRM Apps" ]]; then
             APP_NAME_VAL="${APP_NAME} HRIS"
+            PKG_VAL="com.hashmicro.eva.${ID}"
         else
             APP_NAME_VAL="${APP_NAME}"
+            PKG_VAL="com.hashmicro.eva.${ID}"
         fi
         APP_NAME_JSON+="\"$type_clean\": \"$APP_NAME_VAL\""
+        PACKAGE_ID_JSON+="\"$type_clean\": \"$PKG_VAL\""
+        BUNDLE_ID_JSON+="\"$type_clean\": \"$PKG_VAL\""
 
         if [ $i -lt $((${#ADDR[@]}-1)) ]; then 
             BRANCH_JSON+=", "
             APP_NAME_JSON+=", "
+            PACKAGE_ID_JSON+=", "
+            BUNDLE_ID_JSON+=", "
+            PLAY_CONSOLE_JSON+=", "
         fi
     done
     BRANCH_JSON+="}"
     APP_NAME_JSON+="}"
+    PACKAGE_ID_JSON+="}"
+    BUNDLE_ID_JSON+="}"
+    PLAY_CONSOLE_JSON+="}"
 
     if [ -n "$BASE_URL" ]; then
         RAW_URL=$(echo "$BASE_URL" | tr ',' ' ' | tr ' ' '\n' | grep '\.' | tail -n 1)
@@ -625,9 +663,15 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
           --arg bu "$BASE_URL" \
           --arg db "$DATABASE" \
           --arg ic "$ICON" \
+          --arg fp "$FIREBASE_PROJECT" \
+          --argjson pkg "$PACKAGE_ID_JSON" \
+          --argjson bdl "$BUNDLE_ID_JSON" \
+          --argjson pc "$PLAY_CONSOLE_JSON" \
           '{
             ($id): {
               "Branch": $branch,
+              "Play Console Dashboard": $pc,
+              "Firebase Project": $fp,
               "Project": {
                 "Project Name": $pn,
                 "Region": $r,
@@ -636,7 +680,9 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
                 "Base URL": $bu,
                 "Database": $db,
                 "Icon": $ic
-              }
+              },
+              "Package ID": $pkg,
+              "Bundle ID": $bdl
             }
           }')
         jq --argjson newProj "$NEW_PROJECT" '. * $newProj' "$PROJECT_FILE" > "${PROJECT_FILE}.tmp" && mv "${PROJECT_FILE}.tmp" "$PROJECT_FILE"

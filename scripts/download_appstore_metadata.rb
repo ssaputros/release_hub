@@ -26,6 +26,8 @@ projects = JSON.parse(File.read(projects_path))
 run_id = ARGV[0]
 app_type = ARGV[1]
 
+manual_bundle_id = nil
+
 if run_id.nil? || run_id.empty?
   puts "============================================================"
   puts "🍎 PILIH PROJECT UNTUK DOWNLOAD APP STORE METADATA"
@@ -35,6 +37,7 @@ if run_id.nil? || run_id.empty?
   available_projects.each_with_index do |key, idx|
     puts "#{idx + 1}) #{key} (#{projects[key]['Project']['Project Name']})"
   end
+  puts "M) Input Bundle ID Manual"
   puts "0) Keluar"
   puts "------------------------------------------------------------"
   print "Pilihan Anda: "
@@ -43,89 +46,112 @@ if run_id.nil? || run_id.empty?
   if choice == '0' || choice.empty?
     puts "Batal."
     exit 0
-  end
-  
-  choice_idx = choice.to_i - 1
-  if choice_idx >= 0 && choice_idx < available_projects.length
-    run_id = available_projects[choice_idx]
-  else
-    puts "❌ Pilihan tidak valid."
-    exit 1
-  end
-end
-
-app_data = projects[run_id]
-unless app_data
-  puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
-  exit 1
-end
-
-# Check types
-project_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
-if project_types.empty?
-  puts "❌ Error: Project ini tidak memiliki tipe yang didefinisikan."
-  exit 1
-end
-
-if app_type.nil? || app_type.empty?
-  if project_types.length > 1
+  elsif choice.downcase == 'm'
     puts "\n============================================================"
-    puts "🗂️ PILIH TIPE APLIKASI UNTUK #{app_data['Project']['Project Name']}"
+    puts "🔑 INPUT BUNDLE ID MANUAL"
     puts "============================================================"
-    project_types.each_with_index do |t, idx|
-      puts "#{idx + 1}) #{t}"
+    print "Masukkan Bundle ID Aplikasi (misal: com.domain.app): "
+    manual_bundle_id = $stdin.gets.chomp.strip
+    if manual_bundle_id.empty?
+      puts "❌ Bundle ID tidak boleh kosong."
+      exit 1
     end
-    puts "0) Keluar"
-    puts "------------------------------------------------------------"
-    print "Pilihan Anda: "
-    type_choice = $stdin.gets.chomp.strip
-    
-    if type_choice == '0' || type_choice.empty?
-      puts "Batal."
-      exit 0
-    end
-    
-    type_idx = type_choice.to_i - 1
-    if type_idx >= 0 && type_idx < project_types.length
-      app_type = project_types[type_idx]
+  else
+    choice_idx = choice.to_i - 1
+    if choice_idx >= 0 && choice_idx < available_projects.length
+      run_id = available_projects[choice_idx]
     else
       puts "❌ Pilihan tidak valid."
       exit 1
     end
-  else
-    app_type = project_types.first
   end
 end
 
-# Resolve default Bundle ID from projects.json
-default_bundle_id = app_data['Bundle ID'][app_type]
+if manual_bundle_id
+  bundle_id = manual_bundle_id
+  metadata_ios_path = File.join(project_root, "store_listings", "Manual", bundle_id, "ios")
+  FileUtils.mkdir_p(metadata_ios_path) unless File.directory?(metadata_ios_path)
+  
+  puts "\n============================================================"
+  puts "ℹ️ TARGET DOWNLOAD APP STORE METADATA"
+  puts "============================================================"
+  puts "Bundle ID      : #{bundle_id}"
+  puts "Metadata Path  : #{metadata_ios_path}"
+  puts "============================================================\n"
+else
+  app_data = projects[run_id]
+  unless app_data
+    puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
+    exit 1
+  end
 
-# Input Bundle ID
-puts "\n============================================================"
-puts "🔑 INPUT BUNDLE ID"
-puts "============================================================"
-print "Masukkan Bundle ID Aplikasi (Default: #{default_bundle_id}): "
-input_bundle_id = $stdin.gets.chomp.strip
-bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
+  # Check types
+  project_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
+  if project_types.empty?
+    puts "❌ Error: Project ini tidak memiliki tipe yang didefinisikan."
+    exit 1
+  end
 
-# Normalize directory type name (HRM Apps -> Hrm Apps)
-folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+  if app_type.nil? || app_type.empty?
+    if project_types.length > 1
+      puts "\n============================================================"
+      puts "🗂️ PILIH TIPE APLIKASI UNTUK #{app_data['Project']['Project Name']}"
+      puts "============================================================"
+      project_types.each_with_index do |t, idx|
+        puts "#{idx + 1}) #{t}"
+      end
+      puts "0) Keluar"
+      puts "------------------------------------------------------------"
+      print "Pilihan Anda: "
+      type_choice = $stdin.gets.chomp.strip
+      
+      if type_choice == '0' || type_choice.empty?
+        puts "Batal."
+        exit 0
+      end
+      
+      type_idx = type_choice.to_i - 1
+      if type_idx >= 0 && type_idx < project_types.length
+        app_type = project_types[type_idx]
+      else
+        puts "❌ Pilihan tidak valid."
+        exit 1
+      end
+    else
+      app_type = project_types.first
+    end
+  end
 
-metadata_root = File.join(project_root, "store_listings", folder_type)
-metadata_ios_path = File.join(metadata_root, "ios")
+  # Resolve default Bundle ID from projects.json
+  default_bundle_id = app_data['Bundle ID'][app_type]
 
-# Ensure metadata directory exists
-FileUtils.mkdir_p(metadata_ios_path) unless File.directory?(metadata_ios_path)
+  # Input Bundle ID
+  puts "\n============================================================"
+  puts "🔑 INPUT BUNDLE ID"
+  puts "============================================================"
+  print "Masukkan Bundle ID Aplikasi (Default: #{default_bundle_id}): "
+  input_bundle_id = $stdin.gets.chomp.strip
+  bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
 
-puts "\n============================================================"
-puts "ℹ️ TARGET DOWNLOAD APP STORE METADATA"
-puts "============================================================"
-puts "Project ID     : #{run_id}"
-puts "Project Name   : #{app_data['Project']['Project Name']}"
-puts "App Type       : #{app_type}"
-puts "Bundle ID      : #{bundle_id}"
-puts "Metadata Path  : #{metadata_ios_path}"
-puts "============================================================\n"
+  # Normalize directory type name (HRM Apps -> Hrm Apps)
+  folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+
+  metadata_root = File.join(project_root, "store_listings", folder_type)
+  metadata_ios_path = File.join(metadata_root, "ios")
+
+  # Ensure metadata directory exists
+  FileUtils.mkdir_p(metadata_ios_path) unless File.directory?(metadata_ios_path)
+
+  puts "\n============================================================"
+  puts "ℹ️ TARGET DOWNLOAD APP STORE METADATA"
+  puts "============================================================"
+  puts "Project ID     : #{run_id}"
+  puts "Project Name   : #{app_data['Project']['Project Name']}"
+  puts "App Type       : #{app_type}"
+  puts "Bundle ID      : #{bundle_id}"
+  puts "Metadata Path  : #{metadata_ios_path}"
+  puts "============================================================\n"
+end
 
 # 4. Authenticate Setup
 issuer_id = ENV['ASC_ISSUER_ID']
