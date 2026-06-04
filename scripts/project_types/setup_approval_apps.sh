@@ -202,30 +202,7 @@ if [ -n "$FIREBASE_PROJECT_ID" ]; then
     fi
 fi
 
-# 8. Change icon app
-OPTIMIZED_ICON="${SCRIPT_DIR}/icon/icon.png"
-if [ -f "$OPTIMIZED_ICON" ]; then
-    echo "  🖼️  Menerapkan icon kustom ke project..."
-    mkdir -p "icon"
-    cp "$OPTIMIZED_ICON" "icon/icon.png"
-    
-    if command -v flutter >/dev/null 2>&1; then
-        flutter pub get >/dev/null 2>&1
-        dart run flutter_launcher_icons >/dev/null 2>&1
-        echo "  ✅ Icon berhasil diperbarui."
-        
-        # Tambahan untuk approval apps: Hapus adaptive icon XML kosong
-        ADAPTIVE_ICON_DIR="android/app/src/main/res/mipmap-anydpi-v26"
-        if [ -d "$ADAPTIVE_ICON_DIR" ]; then
-            rm -rf "$ADAPTIVE_ICON_DIR"
-            echo "  🗑️  Removed $ADAPTIVE_ICON_DIR to prevent blank adaptive icon"
-        fi
-    else
-        echo "  ⚠️ Command 'flutter' atau 'dart' tidak ditemukan. Gagal generate launcher icons."
-    fi
-else
-    echo "  ℹ️  Tidak ada custom icon baru (menggunakan icon bawaan project)."
-fi
+# 8. Change icon app (Sekarang ditangani oleh menu terpisah di release.sh)
 
 # 9. Commit & Push Changes
 echo "  💾 Menyimpan konfigurasi branding ke repository..."

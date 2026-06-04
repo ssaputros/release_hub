@@ -162,6 +162,12 @@ while [[ "$#" -gt 0 ]]; do
         --project-key) PROJECT_KEY="$2"; shift ;;
         --branch-name) BRANCH_NAME="$2"; shift ;;
         --firebase-project) FIREBASE_PROJECT="$2"; shift ;;
+        -m|--menu) MENU_CHOICE="$2"; shift ;;
+        -a|--action) ACTION_CHOICE="$2"; shift ;;
+        -f|--file) FILE_PATH_ARG="$2"; shift ;;
+        --bundle-id) BUNDLE_ID_ARG="$2"; shift ;;
+        --track) TRACK_ARG="$2"; shift ;;
+        --method) METHOD_ARG="$2"; shift ;;
         *) 
             # Jika argumen berupa durasi waktu (15m, 1h, 30s)
             if [[ "$1" =~ ^[0-9]+[mhsd]$ ]]; then
@@ -187,13 +193,28 @@ log_action() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$status] $message" >> "$LOG_FILE"
 }
 
-if [ -n "$DELAY_TIME" ]; then
-    log_action "INFO" "Scheduled release started. Waiting for $DELAY_TIME. Args: $ORIGINAL_ARGS"
-    echo "⏳ Menunda eksekusi script selama $DELAY_TIME..."
-    sleep "$DELAY_TIME"
-    log_action "INFO" "Wait time $DELAY_TIME finished. Executing target: ${RUN_ID:-Interactive}."
-    echo "▶️ Waktu tunggu selesai! Memulai eksekusi sekarang..."
-fi
+wait_if_scheduled() {
+    if [ -n "$DELAY_TIME" ] && [ "${ALREADY_WAITED:-false}" != "true" ]; then
+        log_action "INFO" "Scheduled release started. Waiting for $DELAY_TIME. Args: $ORIGINAL_ARGS"
+        echo "============================================================"
+        echo "⏳ MENJADWALKAN EKSEKUSI DI BACKGROUND..."
+        echo "============================================================"
+        echo "Script akan berjalan dalam $DELAY_TIME."
+        echo "Anda dapat menutup terminal ini dengan aman."
+        
+        # Eksekusi background menggunakan nohup
+        # Kita menggunakan exec untuk menggantikan current process atau spawn baru yang disown
+        # Tapi karena ini bash function, kita spawn script ini lagi tanpa argumen delay
+        
+        local clean_args=$(echo "$ORIGINAL_ARGS" | sed -E "s/\\b[0-9]+[mhsd]\\b//g")
+        nohup bash -c "sleep $DELAY_TIME && \"${SCRIPT_DIR}/release.sh\" $clean_args" >> "$LOG_FILE" 2>&1 &
+        local pid=$!
+        
+        echo "✅ Proses berjalan di background (PID: $pid)."
+        echo "Log dapat dilihat di: $LOG_FILE"
+        exit 0
+    fi
+}
 
 # Fungsi untuk membuat ID (gabungan teks, lowercase, tanpa special char)
 generate_id() {
@@ -245,11 +266,12 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "D) Create New Project"
         echo "E) Upload Google Drive (File Bebas)"
         echo "F) Submit Testflight (File IPA)"
-        echo "G) Submit Appstore Review (File IPA)"
-        echo "H) Submit Playstore (File AAB)"
-        echo "I) Import Project from Branch (Reverse Setup)"
-        echo "J) Login Google Drive"
-        echo "K) Push Metadata (App Store) Manual"
+        echo "G) Upload Appstore (File IPA)"
+        echo "H) Submit Appstore Review (Bundle ID)"
+        echo "I) Submit Playstore (File AAB)"
+        echo "J) Import Project from Branch (Reverse Setup)"
+        echo "K) Login Google Drive"
+        echo "L) Push Metadata (App Store) Manual"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -264,8 +286,19 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         done <<< "$projects_data"
         
         echo "------------------------------------------------------------"
-        echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J): "
-        read -r project_input
+        if [ -n "$MENU_CHOICE" ]; then
+            project_input="$MENU_CHOICE"
+            echo "Pilihan otomatis (dari argumen): $project_input"
+        else
+            echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J/K/L): "
+            read -r project_input
+        fi
+        
+        if [ -z "$project_input" ]; then
+            echo "❌ Input tidak boleh kosong."
+            exit 1
+        fi
+
         if [[ "$project_input" =~ ^[Aa]$ ]]; then
             echo "============================================================"
             echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
@@ -304,8 +337,11 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             echo "============================================================"
             echo "📁 UPLOAD GOOGLE DRIVE (FILE BEBAS)"
             echo "============================================================"
-            read -e -p "Masukkan Path File: " FILE_PATH
-            read -p "Masukkan Nama Folder: " FOLDER_NAME
+            FILE_PATH="${FILE_PATH_ARG}"
+            if [ -z "$FILE_PATH" ]; then read -e -p "Masukkan Path File: " FILE_PATH; fi
+            
+            FOLDER_NAME="${APP_NAME}"
+            if [ -z "$FOLDER_NAME" ]; then read -p "Masukkan Nama Folder: " FOLDER_NAME; fi
             
             if [ ! -f "$FILE_PATH" ]; then
                 echo "❌ File tidak ditemukan: $FILE_PATH"
@@ -330,7 +366,8 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             echo "============================================================"
             echo "🍎 SUBMIT TESTFLIGHT (FILE IPA)"
             echo "============================================================"
-            read -e -p "Masukkan Path File (.ipa): " FILE_PATH
+            FILE_PATH="${FILE_PATH_ARG}"
+            if [ -z "$FILE_PATH" ]; then read -e -p "Masukkan Path File (.ipa): " FILE_PATH; fi
             
             if [ ! -f "$FILE_PATH" ]; then
                 echo "❌ File tidak ditemukan: $FILE_PATH"
@@ -349,9 +386,10 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             exit 0
         elif [[ "$project_input" =~ ^[Gg]$ ]]; then
             echo "============================================================"
-            echo "🍎 SUBMIT APPSTORE REVIEW (FILE IPA)"
+            echo "🍎 UPLOAD APP STORE (FILE IPA)"
             echo "============================================================"
-            read -e -p "Masukkan Path File (.ipa) untuk diekstrak Bundle ID: " FILE_PATH
+            FILE_PATH="${FILE_PATH_ARG}"
+            if [ -z "$FILE_PATH" ]; then read -e -p "Masukkan Path File (.ipa): " FILE_PATH; fi
             
             if [ ! -f "$FILE_PATH" ]; then
                 echo "❌ File tidak ditemukan: $FILE_PATH"
@@ -366,13 +404,28 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             fi
             echo "✅ Bundle ID: $BUNDLE_ID"
             
-            ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "standalone" "Standalone" "$BUNDLE_ID"
+            ruby "${SCRIPT_DIR}/scripts/upload_to_appstore.rb" "$FILE_PATH" "$BUNDLE_ID"
             exit 0
         elif [[ "$project_input" =~ ^[Hh]$ ]]; then
             echo "============================================================"
+            echo "🍎 SUBMIT APPSTORE REVIEW"
+            echo "============================================================"
+            BUNDLE_ID="${BUNDLE_ID_ARG}"
+            if [ -z "$BUNDLE_ID" ]; then read -p "Masukkan Bundle ID Aplikasi (misal: com.domain.app): " BUNDLE_ID; fi
+            
+            if [ -z "$BUNDLE_ID" ]; then
+                echo "❌ Bundle ID tidak boleh kosong."
+                exit 1
+            fi
+            
+            ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "standalone" "Standalone" "$BUNDLE_ID"
+            exit 0
+        elif [[ "$project_input" =~ ^[Ii]$ ]]; then
+            echo "============================================================"
             echo "🍎 SUBMIT PLAYSTORE (FILE AAB)"
             echo "============================================================"
-            read -e -p "Masukkan Path File (.aab): " FILE_PATH
+            FILE_PATH="${FILE_PATH_ARG}"
+            if [ -z "$FILE_PATH" ]; then read -e -p "Masukkan Path File (.aab): " FILE_PATH; fi
             
             if [ ! -f "$FILE_PATH" ]; then
                 echo "❌ File tidak ditemukan: $FILE_PATH"
@@ -395,18 +448,19 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             fi
             echo "✅ Package Name: $PACKAGE_NAME"
             
-            read -p "Masukkan track rilis (default: internal): " TRACK_INPUT
+            TRACK_INPUT="${TRACK_ARG}"
+            if [ -z "$TRACK_INPUT" ]; then read -p "Masukkan track rilis (default: internal): " TRACK_INPUT; fi
             TRACK="${TRACK_INPUT:-internal}"
             
             ruby "${SCRIPT_DIR}/scripts/upload_to_playstore.rb" "$FILE_PATH" "$PACKAGE_NAME" "$TRACK"
             exit 0
-        elif [[ "$project_input" =~ ^[Ii]$ ]]; then
+        elif [[ "$project_input" =~ ^[Jj]$ ]]; then
             ruby "${SCRIPT_DIR}/scripts/import_project.rb"
             exit 0
-        elif [[ "$project_input" =~ ^[Jj]$ ]]; then
+        elif [[ "$project_input" =~ ^[Kk]$ ]]; then
             python3 "${SCRIPT_DIR}/scripts/generate_token.py"
             exit 0
-        elif [[ "$project_input" =~ ^[Kk]$ ]]; then
+        elif [[ "$project_input" =~ ^[Ll]$ ]]; then
             ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "manual"
             exit 0
         fi
@@ -508,6 +562,8 @@ fi
                 echo "🛠️ PILIH AKSI UNTUK: ${#SELECTED_TARGETS[@]} Project(s) Terpilih"
                 echo "============================================================"
                 echo " 1) Setup Konfigurasi"
+                echo "23) Change Icon"
+                echo "24) Rebrand Package Name/Bundle ID"
                 echo " 2) Bump Version"
                 echo " 3) Clean & Pod Install"
                 echo " 4) Update Play Console Dashboard ID"
@@ -530,14 +586,34 @@ fi
                 echo "21) Upload Playstore (AAB)"
                 echo "22) Submit Playstore (Playwright UI)"
                 echo "------------------------------------------------------------"
-                echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 1 20 21): "
-
-                read -r action_choice
+                if [ -n "$ACTION_CHOICE" ]; then
+                    action_choice="$ACTION_CHOICE"
+                    echo "Pilihan otomatis (dari argumen): $action_choice"
+                else
+                    echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 1 20 21): "
+                    read -r action_choice
+                fi
 
 
                 if [ -z "$action_choice" ]; then
                     echo "❌ Pilihan tidak valid."
                     exit 1
+                fi
+                
+                if [[ " $action_choice " =~ " 17 " ]] || [[ " $action_choice " =~ " 14 " ]]; then
+                    if [ -n "$METHOD_ARG" ]; then
+                        GLOBAL_METHOD_CHOICE="$METHOD_ARG"
+                    else
+                        echo "============================================================"
+                        echo "🛠️ PILIH METODE SETUP STORE LISTING"
+                        echo "============================================================"
+                        echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
+                        echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
+                        echo "------------------------------------------------------------"
+                        echo -n "Pilihan Anda (default: 1): "
+                        read -r GLOBAL_METHOD_CHOICE
+                    fi
+                    export GLOBAL_METHOD_CHOICE="${GLOBAL_METHOD_CHOICE:-1}"
                 fi
     fi
 fi
@@ -553,7 +629,7 @@ elif [ "$BUILD_ONLY_MODE" = true ]; then
     action_choice="9 17 20"
 elif [ -n "$RUN_ID" ]; then
     # Full default behavior for direct RUN_ID
-    action_choice="1 17 19"
+    action_choice="1 23 24 17 19"
 fi
 
 # Jika menggunakan --project, tambahkan ke projects.json
@@ -854,11 +930,6 @@ execute_action() {
             
             case "$action" in
                 1) 
-                   ICON_URL=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
-                   if [ -n "$ICON_URL" ]; then
-                       bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
-                   fi
-                   bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
                    script_file="${SCRIPT_DIR}/scripts/project_types/setup_${type_slug}.sh"
                    if [ -f "$script_file" ]; then
                        REGION=$(jq -r ".\"$TARGET_ID\".Project.Region // empty" "$PROJECT_FILE")
@@ -866,6 +937,41 @@ execute_action() {
                        DATABASE=$(jq -r ".\"$TARGET_ID\".Project.Database // empty" "$PROJECT_FILE")
                        bash "$script_file" "$TARGET_ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
                    fi
+                   ;;
+                23)
+                   ICON_URL=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
+                   if [ -n "$ICON_URL" ]; then
+                       bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
+                   fi
+                   
+                   RAW_LOCATION=$(jq -r ".types[\"$PRIMARY_TYPE\"].location // empty" "$CONFIG_FILE")
+                   APP_LOCATION=$(eval echo "$RAW_LOCATION")
+                   OPTIMIZED_ICON="${SCRIPT_DIR}/icon/icon.png"
+                   if [ -n "$APP_LOCATION" ] && [ -d "$APP_LOCATION" ] && [ -f "$OPTIMIZED_ICON" ]; then
+                       echo "  🖼️  Menerapkan icon kustom ke project $APP_LOCATION..."
+                       mkdir -p "${APP_LOCATION}/icon"
+                       cp "$OPTIMIZED_ICON" "${APP_LOCATION}/icon/icon.png"
+                       
+                       cd "$APP_LOCATION" || exit 1
+                       if command -v fvm >/dev/null 2>&1; then
+                           fvm flutter pub get >/dev/null 2>&1
+                           fvm dart run flutter_launcher_icons >/dev/null 2>&1
+                       else
+                           flutter pub get >/dev/null 2>&1
+                           dart run flutter_launcher_icons >/dev/null 2>&1
+                       fi
+                       
+                       ADAPTIVE_ICON_DIR="android/app/src/main/res/mipmap-anydpi-v26"
+                       if [ -d "$ADAPTIVE_ICON_DIR" ]; then
+                           rm -rf "$ADAPTIVE_ICON_DIR"
+                           echo "  🗑️  Removed $ADAPTIVE_ICON_DIR to prevent blank adaptive icon"
+                       fi
+                       cd "${SCRIPT_DIR}" || exit 1
+                       echo "  ✅ Icon berhasil diperbarui di project."
+                   fi
+                   ;;
+                24)
+                   bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
                    ;;
                 2) ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
                 3) 
@@ -911,15 +1017,7 @@ execute_action() {
                 12) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
                 13) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
                 17) 
-                   echo "============================================================"
-                   echo "🛠️ PILIH METODE SETUP STORE LISTING"
-                   echo "============================================================"
-                   echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
-                   echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
-                   echo "------------------------------------------------------------"
-                   echo -n "Pilihan Anda (default: 1): "
-                   read -r method_choice
-                   if [[ "$method_choice" == "2" ]]; then
+                   if [[ "${GLOBAL_METHOD_CHOICE:-1}" == "2" ]]; then
                        node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
                    else
                        ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$type_clean" || echo "❌ update_store_listing.rb gagal dijalankan."
