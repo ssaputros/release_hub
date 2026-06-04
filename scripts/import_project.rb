@@ -60,9 +60,9 @@ project_id_guess = ""
 
 ["HRM Apps", "Approval Apps"].each do |app_type|
   type_config = config.dig("types", app_type)
-  next unless type_config && type_config["path"]
+  next unless type_config && type_config["location"]
 
-  repo_path = File.expand_path(type_config["path"])
+  repo_path = File.expand_path(type_config["location"])
   next unless Dir.exist?(repo_path)
 
   branch = prompt("Masukkan branch untuk #{app_type} (kosongkan jika skip)")

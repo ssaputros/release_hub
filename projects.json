@@ -276,5 +276,29 @@
       "Approval Apps": "com.hashmicro.approval.sti",
       "HRM Apps": "com.hashmicro.eva.sti"
     }
+  },
+  "primaboga": {
+    "Branch": {
+      "HRM Apps": "primaboga"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "PNI HRIS"
+      },
+      "Project Name": "Primaboga",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://primaboga.hashmicro.co",
+      "Database": "pni-live",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.primaboga"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.primaboga"
+    }
   }
 }
