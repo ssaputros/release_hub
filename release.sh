@@ -562,35 +562,35 @@ fi
                 echo "🛠️ PILIH AKSI UNTUK: ${#SELECTED_TARGETS[@]} Project(s) Terpilih"
                 echo "============================================================"
                 echo " 1) Setup Konfigurasi"
-                echo "23) Change Icon"
-                echo "24) Rebrand Package Name/Bundle ID"
-                echo " 2) Bump Version"
-                echo " 3) Clean & Pod Install"
-                echo " 4) Update Play Console Dashboard ID"
-                echo " 5) Full Deploy iOS (Otomatis jalankan 6-13)"
-                echo " 6) Create Appstore"
-                echo " 7) Push Metadata (App Store)"
-                echo " 8) Complete Appstore Info"
-                echo " 9) Build IPA"
-                echo "10) Upload IPA & Submit Testflight"
-                echo "11) Submit Testflight (Tanpa Upload)"
-                echo "12) Submit Appstore Review"
-                echo "13) Request Unlisted Distribution"
-                echo "14) Full Deploy Android (Otomatis jalankan 15-22)"
-                echo "15) Create Playstore"
-                echo "16) Setup Playstore Info"
-                echo "17) Upload Playstore Listing"
-                echo "18) Build APK"
-                echo "19) Upload to Google Drive (APK)"
-                echo "20) Build AAB"
-                echo "21) Upload Playstore (AAB)"
-                echo "22) Submit Playstore (Playwright UI)"
+                echo " 2) Change Icon"
+                echo " 3) Rebrand Package Name/Bundle ID"
+                echo " 4) Bump Version"
+                echo " 5) Clean & Pod Install"
+                echo " 6) Update Play Console Dashboard ID"
+                echo " 7) Full Deploy iOS (Otomatis jalankan 8-15)"
+                echo " 8) Create Appstore"
+                echo " 9) Push Metadata (App Store)"
+                echo "10) Complete Appstore Info"
+                echo "11) Build IPA"
+                echo "12) Upload IPA & Submit Testflight"
+                echo "13) Submit Testflight (Tanpa Upload)"
+                echo "14) Submit Appstore Review"
+                echo "15) Request Unlisted Distribution"
+                echo "16) Full Deploy Android (Otomatis jalankan 17-24)"
+                echo "17) Create Playstore"
+                echo "18) Setup Playstore Info"
+                echo "19) Upload Playstore Listing"
+                echo "20) Build APK"
+                echo "21) Upload to Google Drive (APK)"
+                echo "22) Build AAB"
+                echo "23) Upload Playstore (AAB)"
+                echo "24) Submit Playstore (Playwright UI)"
                 echo "------------------------------------------------------------"
                 if [ -n "$ACTION_CHOICE" ]; then
                     action_choice="$ACTION_CHOICE"
                     echo "Pilihan otomatis (dari argumen): $action_choice"
                 else
-                    echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 1 20 21): "
+                    echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 1 22 23): "
                     read -r action_choice
                 fi
 
@@ -600,20 +600,8 @@ fi
                     exit 1
                 fi
                 
-                if [[ " $action_choice " =~ " 17 " ]] || [[ " $action_choice " =~ " 14 " ]]; then
-                    if [ -n "$METHOD_ARG" ]; then
-                        GLOBAL_METHOD_CHOICE="$METHOD_ARG"
-                    else
-                        echo "============================================================"
-                        echo "🛠️ PILIH METODE SETUP STORE LISTING"
-                        echo "============================================================"
-                        echo "1) Fastlane API (Direct upload, cepat & tanpa browser)"
-                        echo "2) Playwright Browser (Semi-otomatis lewat UI browser)"
-                        echo "------------------------------------------------------------"
-                        echo -n "Pilihan Anda (default: 1): "
-                        read -r GLOBAL_METHOD_CHOICE
-                    fi
-                    export GLOBAL_METHOD_CHOICE="${GLOBAL_METHOD_CHOICE:-1}"
+                if [[ " $action_choice " =~ " 19 " ]] || [[ " $action_choice " =~ " 16 " ]]; then
+                    export GLOBAL_METHOD_CHOICE="${METHOD_ARG:-1}"
                 fi
     fi
 fi
@@ -621,15 +609,15 @@ fi
 # Fallback untuk mode non-interaktif
 if [ "$UPLOAD_ONLY_MODE" = true ]; then
     if [ "$TESTFLIGHT_MODE" = true ]; then
-        action_choice="10"
+        action_choice="12"
     else
-        action_choice="19"
+        action_choice="21"
     fi
 elif [ "$BUILD_ONLY_MODE" = true ]; then
-    action_choice="9 17 20"
+    action_choice="11 19 22"
 elif [ -n "$RUN_ID" ]; then
     # Full default behavior for direct RUN_ID
-    action_choice="1 23 24 17 19"
+    action_choice="1 2 3 19 21"
 fi
 
 # Jika menggunakan --project, tambahkan ke projects.json
@@ -782,7 +770,7 @@ fi
 IFS=' ' read -ra ACTION_ARRAY <<< "$(echo "$action_choice" | tr ',' ' ')"
 
 # Global setup untuk Playwright
-if [[ " ${ACTION_ARRAY[*]} " =~ " 4 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 14 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 15 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 16 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 17 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 22 " ]]; then
+if [[ " ${ACTION_ARRAY[*]} " =~ " 6 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 16 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 17 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 18 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 19 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 24 " ]]; then
     echo "============================================================"
     echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
     echo "============================================================"
@@ -881,11 +869,11 @@ execute_action() {
         
         # Target-level actions
         case "$action" in
-            4) 
+            6) 
                 node "${SCRIPT_DIR}/automation/update_dashboard_id.js" "$TARGET_ID" || echo "❌ update_dashboard_id.js gagal dijalankan."
                 continue
                 ;;
-            15) 
+            17) 
                 if node "${SCRIPT_DIR}/automation/create_app.js" "$TARGET_ID"; then
                     echo "✅ create_app.js berhasil"
                 else
@@ -893,11 +881,11 @@ execute_action() {
                 fi
                 continue
                 ;;
-            16) 
+            18) 
                 node "${SCRIPT_DIR}/automation/runner_app_info.js" "$TARGET_ID" || echo "❌ runner_app_info.js gagal dijalankan."
                 continue
                 ;;
-            22) 
+            24) 
                 node "${SCRIPT_DIR}/automation/submit_playstore.js" "$TARGET_ID" || echo "❌ submit_playstore.js gagal dijalankan."
                 continue
                 ;;
@@ -938,7 +926,7 @@ execute_action() {
                        bash "$script_file" "$TARGET_ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
                    fi
                    ;;
-                23)
+                2)
                    ICON_URL=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
                    if [ -n "$ICON_URL" ]; then
                        bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
@@ -970,11 +958,11 @@ execute_action() {
                        echo "  ✅ Icon berhasil diperbarui di project."
                    fi
                    ;;
-                24)
+                3)
                    bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
                    ;;
-                2) ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
-                3) 
+                4) ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
+                5) 
                    RAW_LOCATION=$(jq -r ".types[\"$PRIMARY_TYPE\"].location // empty" "$CONFIG_FILE")
                    APP_LOCATION=$(eval echo "$RAW_LOCATION")
                    if [ -z "$APP_LOCATION" ] || [ ! -d "$APP_LOCATION" ]; then
@@ -992,56 +980,56 @@ execute_action() {
                    pod install || { echo "❌ pod install gagal!"; exit 1; }
                    cd "${SCRIPT_DIR}" || exit 1
                    ;;
-                6) 
+                8) 
                    if [ -f "${SCRIPT_DIR}/init_appstore.sh" ]; then
                        bash "${SCRIPT_DIR}/init_appstore.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses init appstore gagal!"; exit 1; }
                    fi
                    ;;
-                7) ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$type_clean" || echo "❌ push_appstore_metadata.rb gagal dijalankan." ;;
-                8) ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$type_clean" || echo "❌ setup_appstore_info.rb gagal dijalankan." ;;
-                9) 
+                9) ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "$TARGET_ID" "$type_clean" || echo "❌ push_appstore_metadata.rb gagal dijalankan." ;;
+                10) ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$type_clean" || echo "❌ setup_appstore_info.rb gagal dijalankan." ;;
+                11) 
                    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
                        BUILD_TARGET_IPA=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
                    else
                        echo "❌ Script build_app.sh tidak ditemukan!"; exit 1
                    fi
                    ;;
-                10) 
+                12) 
                    echo "🍎 MENGUNGGAH KE APP STORE CONNECT / TESTFLIGHT: $APP_NAME"
                    upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
                    ;;
-                11) 
+                13) 
                    echo "🍎 SUBMIT TESTFLIGHT (TANPA UPLOAD): $APP_NAME"
                    SKIP_UPLOAD=true upload_testflight "$TARGET_DIR" "$TARGET_ID" "$APP_PACKAGE_NAME" "$APP_NAME" "$type_clean"
                    ;;
-                12) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
-                13) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
-                17) 
+                14) ruby "${SCRIPT_DIR}/scripts/submit_appstore_version.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ submit_appstore_version.rb gagal dijalankan." ;;
+                15) ruby "${SCRIPT_DIR}/scripts/request_unlisted_app.rb" "$TARGET_ID" "$type_clean" "$APP_PACKAGE_NAME" || echo "❌ request_unlisted_app.rb gagal dijalankan." ;;
+                19) 
                    if [[ "${GLOBAL_METHOD_CHOICE:-1}" == "2" ]]; then
                        node "${SCRIPT_DIR}/automation/runner_store_listing.js" "$TARGET_ID" || echo "❌ runner_store_listing.js gagal dijalankan."
                    else
                        ruby "${SCRIPT_DIR}/scripts/update_store_listing.rb" "$TARGET_ID" "$type_clean" || echo "❌ update_store_listing.rb gagal dijalankan."
                    fi
                    ;;
-                18) 
+                20) 
                    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
                        BUILD_TARGET_APK=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
                    else
                        echo "❌ Script build_app.sh tidak ditemukan!"; exit 1
                    fi
                    ;;
-                19) 
+                21) 
                    echo "🚀 MENGUNGGAH APK KE GOOGLE DRIVE: $APP_NAME"
                    upload_drive "$TARGET_DIR" "$PRIMARY_TYPE" "$PROJECT_NAME" "$APP_NAME"
                    ;;
-                20) 
+                22) 
                    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
                        BUILD_TARGET_AAB=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
                    else
                        echo "❌ Script build_app.sh tidak ditemukan!"; exit 1
                    fi
                    ;;
-                21) 
+                23) 
                    ruby "${SCRIPT_DIR}/scripts/submit_playstore_version.rb" "$TARGET_ID" "$type_clean" || { echo "❌ Proses upload Play Store gagal!"; exit 1; }
                    ;;
             esac
@@ -1054,18 +1042,18 @@ for CURRENT_ACTION in "${ACTION_ARRAY[@]}"; do
         continue
     fi
     
-    if [ "$CURRENT_ACTION" = "5" ]; then
+    if [ "$CURRENT_ACTION" = "7" ]; then
         echo "============================================================"
-        echo "▶️ MENGEKSEKUSI OPSI: 5 (FULL DEPLOY iOS)"
+        echo "▶️ MENGEKSEKUSI OPSI: 7 (FULL DEPLOY iOS)"
         echo "============================================================"
-        for sub_action in 6 7 8 9 10 12 13; do
+        for sub_action in 8 9 10 11 12 14 15; do
             execute_action "$sub_action"
         done
-    elif [ "$CURRENT_ACTION" = "14" ]; then
+    elif [ "$CURRENT_ACTION" = "16" ]; then
         echo "============================================================"
-        echo "▶️ MENGEKSEKUSI OPSI: 14 (FULL DEPLOY ANDROID)"
+        echo "▶️ MENGEKSEKUSI OPSI: 16 (FULL DEPLOY ANDROID)"
         echo "============================================================"
-        for sub_action in 15 16 17 18 19 20 21 22; do
+        for sub_action in 17 18 19 20 21 22 23 24; do
             execute_action "$sub_action"
         done
     else

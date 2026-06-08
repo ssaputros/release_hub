@@ -292,13 +292,113 @@
       "Database": "pni-live",
       "Icon": ""
     },
-    "Play Console Dashboard": {
-    },
+    "Play Console Dashboard": {},
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.primaboga"
     },
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.primaboga"
+    }
+  },
+  "pancaran": {
+    "Branch": {
+      "HRM Apps": "pancaran-20260209"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "Pancaran Talent Hub"
+      },
+      "Project Name": "Pancaran",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://pancaran.hash-017.com",
+      "Database": "pancaran-live0503",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {},
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.pancaran"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.pancaran"
+    }
+  },
+  "grahajayapratamakinerja": {
+    "Branch": {
+      "Approval Apps": "gjpk"
+    },
+    "Play Console Dashboard": {
+      "Approval Apps": ""
+    },
+    "Firebase Project": "hashmicro-production-18",
+    "Project": {
+      "Project Name": "Graha Jaya Pratama Kinerja",
+      "Region": "Indonesia",
+      "App Name": {
+        "Approval Apps": "GJPK Apps Approval"
+      },
+      "Type": "Approval Apps",
+      "Base URL": "https://gjpk-dev.hash-019.com",
+      "Database": "gjpk-dev-score22-master-core-db",
+      "Icon": "https://drive.google.com/open?id=1wq2GEsImabgtY8H83RMh9Zyh9pE-KXjo"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.approval.grahajayapratamakinerja"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.approval.grahajayapratamakinerja"
+    }
+  },
+  "ptsaranainstrument": {
+    "Branch": {
+      "HRM Apps": "ptsaranainstrument"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4975002390229684606"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "PT Sarana Instrument",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "SI-HR"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://sarana-instrument.hashmicro.co",
+      "Database": "PTSI",
+      "Icon": "https://drive.google.com/open?id=1TlWNq1-DLZZul0TPweQE7ccjDey00YWQ"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.ptsaranainstrument"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.ptsaranainstrument"
+    }
+  },
+  "pitala": {
+    "Branch": {
+      "HRM Apps": "pitala"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4973917802599385556"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Pitala",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Pitala HR"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://pitala.hash-011.com",
+      "Database": "pitala-score22",
+      "Icon": "https://drive.google.com/open?id=1TZHEKGZWN1GS6db2PIwJNTfeL5XANFjv"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.pitala"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.pitala"
     }
   }
 }
