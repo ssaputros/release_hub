@@ -27,19 +27,21 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-LOCATION_RAW=$(jq -r ".types[\"$TYPE\"].location // empty" "$CONFIG_FILE")
+if [ -n "${RELEASE_HUB_WORKTREE_PATH:-}" ] && { [ -z "${RELEASE_HUB_WORKTREE_TYPE:-}" ] || [ "$RELEASE_HUB_WORKTREE_TYPE" = "$TYPE" ]; }; then
+    LOCATION="${RELEASE_HUB_WORKTREE_PATH/#\~/$HOME}"
+else
+    LOCATION_RAW=$(jq -r ".types[\"$TYPE\"].location // empty" "$CONFIG_FILE")
+    if [ -z "$LOCATION_RAW" ]; then
+        echo "  ⚠️ Lokasi untuk tipe $TYPE tidak ditemukan di config.json. Skip setup HRM."
+        exit 0
+    fi
+    LOCATION="${LOCATION_RAW/#\~/$HOME}"
+fi
+
 FIREBASE_PROJECT_ID=$(jq -r ".\"$ID\".\"Firebase Project\" // empty" "${SCRIPT_DIR}/projects.json" 2>/dev/null)
 if [ -z "$FIREBASE_PROJECT_ID" ]; then
     FIREBASE_PROJECT_ID=$(jq -r ".firebase_project // empty" "$CONFIG_FILE")
 fi
-
-if [ -z "$LOCATION_RAW" ]; then
-    echo "  ⚠️ Lokasi untuk tipe $TYPE tidak ditemukan di config.json. Skip setup HRM."
-    exit 0
-fi
-
-# Expand tilde ~ if any
-LOCATION="${LOCATION_RAW/#\~/$HOME}"
 
 if [ ! -d "$LOCATION" ]; then
     echo "  ❌ Error: Direktori $LOCATION tidak ditemukan."

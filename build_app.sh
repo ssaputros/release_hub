@@ -13,6 +13,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 PROJECT_FILE="${SCRIPT_DIR}/projects.json"
 CONFIG_FILE="${SCRIPT_DIR}/config.json"
 
+expand_path() {
+    local path_value="$1"
+    printf '%s' "${path_value/#\~/$HOME}"
+}
+
+resolve_app_location() {
+    local app_type="$1"
+    local raw_location=""
+
+    if [ -n "${RELEASE_HUB_WORKTREE_PATH:-}" ] && { [ -z "${RELEASE_HUB_WORKTREE_TYPE:-}" ] || [ "$RELEASE_HUB_WORKTREE_TYPE" = "$app_type" ]; }; then
+        expand_path "$RELEASE_HUB_WORKTREE_PATH"
+        return
+    fi
+
+    if [ -f "$CONFIG_FILE" ]; then
+        raw_location=$(jq -r ".types[\"$app_type\"].location // empty" "$CONFIG_FILE")
+    fi
+
+    if [ -n "$raw_location" ]; then
+        expand_path "$raw_location"
+    fi
+}
+
 if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
     if ! jq -e ".\"$RUN_ID\"" "$PROJECT_FILE" >/dev/null 2>&1; then
         echo "❌ Error: Project '$RUN_ID' tidak ditemukan di projects.json"
@@ -24,11 +47,9 @@ if command -v jq >/dev/null 2>&1 && [ -f "$PROJECT_FILE" ]; then
     APP_NAME=$(jq -r ".\"$RUN_ID\".Project.\"App Name\"[\"$APP_TYPE\"] // .\"$RUN_ID\".Project.\"App Name\" // empty" "$PROJECT_FILE")
     BRANCH=$(jq -r ".\"$RUN_ID\".Branch[\"$APP_TYPE\"] // empty" "$PROJECT_FILE")
     
-    APP_LOCATION=""
+    APP_LOCATION=$(resolve_app_location "$APP_TYPE")
     GDRIVE_FOLDER_ID=""
     if [ -f "$CONFIG_FILE" ]; then
-        RAW_LOCATION=$(jq -r ".types[\"$APP_TYPE\"].location // empty" "$CONFIG_FILE")
-        APP_LOCATION=$(eval echo "$RAW_LOCATION")
         GDRIVE_FOLDER_ID=$(jq -r ".types[\"$APP_TYPE\"].gdrive_folder_id // empty" "$CONFIG_FILE")
     fi
 

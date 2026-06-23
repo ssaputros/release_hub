@@ -13,6 +13,22 @@ RUN_ID=""
 UPLOAD_ONLY_ID=""
 UPLOAD_ONLY_MODE=false
 TESTFLIGHT_MODE=false
+BUILD_ONLY_ID=""
+BUILD_ONLY_MODE=false
+APP_TYPE_FILTER=""
+WORKTREE_PATH=""
+DRY_RUN=false
+NON_INTERACTIVE=false
+LOGIN_FASTLANE_MODE=false
+RUN_CLEANUP=false
+SELECTED_TARGETS=()
+action_choice=""
+
+ORIGINAL_ARGS=("$@")
+ORIGINAL_ARGS_LOG=""
+if [ "$#" -gt 0 ]; then
+    printf -v ORIGINAL_ARGS_LOG '%q ' "$@"
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
@@ -105,7 +121,13 @@ show_help() {
     echo "  -j, --jobs            Mengelola daftar scheduler TestFlight yang sedang berjalan"
     echo "  -u, --upload [ID]     Hanya mengunggah build terakhir (upload only) ke Google Drive. Bisa juga tanpa ID untuk memilih interaktif."
     echo "  -t, --testflight [ID] Hanya mengunggah IPA terakhir ke TestFlight External dan generate Public Link."
+    echo "  --login-fastlane      Buka Terminal macOS foreground untuk login/refresh Fastlane tanpa memilih project."
     echo "  -b, --build           Hanya menjalankan proses build aplikasi (APK/IPA) tanpa melakukan setup environment atau upload."
+    echo "  -a, --action <aksi>   Jalankan nomor aksi tanpa prompt menu (contoh: '1 22 23')."
+    echo "  --app-type <tipe>     Filter tipe aplikasi untuk project multi-type (contoh: 'HRM Apps')."
+    echo "  --worktree-path <dir> Override lokasi repo app untuk tipe yang dipilih; wajib bersama --app-type."
+    echo "  --dry-run             Tampilkan target, tipe, dan aksi tanpa mengeksekusi proses."
+    echo "  --non-interactive     Gagal cepat jika argumen wajib kurang, jangan menunggu input user."
     echo "  --project <nama>      Menentukan Nama Project baru"
     echo "  --region <region>     Menentukan Region Project"
     echo "  --app-name <nama>     Menentukan Nama Aplikasi"
@@ -121,13 +143,27 @@ show_help() {
     echo "  release -u                      # Pilih project interaktif lalu hanya upload APK tanpa build ulang"
     echo "  release -u smkgemanusantara     # Upload APK dari 'smkgemanusantara' tanpa build ulang"
     echo "  release -b                      # Build aplikasi dari environment saat ini tanpa setup ulang dan tanpa upload"
+    echo "  release smkgemanusantara -a '22 23' --app-type 'HRM Apps'"
+    echo "  release smkgemanusantara -a '20,21' --dry-run"
+    echo "  release sunasia -a '1 22' --app-type 'HRM Apps' --worktree-path '/path/to/HrmApp-worktrees/sunasia'"
     echo "  release --project 'PT Baru' --app-name 'Baru HRIS' --type 'HRM Apps' --base-url 'https://api.baru.com' --database 'baru_db'"
     exit 0
+}
+
+require_option_value() {
+    local option="$1"
+    local value="${2:-}"
+
+    if [ -z "$value" ] || [[ "$value" == -* ]]; then
+        echo "❌ Option $option wajib memiliki nilai."
+        exit 1
+    fi
 }
 
 # Looping untuk mem-parsing argumen
 while [[ "$#" -gt 0 ]]; do
     case $1 in
+        -h|--help) show_help ;;
         -j|--jobs) manage_jobs ;;
         -b|--build) 
             BUILD_ONLY_MODE=true
@@ -151,23 +187,28 @@ while [[ "$#" -gt 0 ]]; do
                 shift
             fi
             ;;
-        --project) PROJECT="$2"; shift ;;
-        --region) REGION="$2"; shift ;;
-        --app-name) APP_NAME="$2"; shift ;;
-        --type) TYPE="$2"; shift ;;
-        --base-url) BASE_URL="$2"; shift ;;
-        --database) DATABASE="$2"; shift ;;
-        --icon) ICON="$2"; shift ;;
-        --notes) NOTES="$2"; shift ;;
-        --project-key) PROJECT_KEY="$2"; shift ;;
-        --branch-name) BRANCH_NAME="$2"; shift ;;
-        --firebase-project) FIREBASE_PROJECT="$2"; shift ;;
-        -m|--menu) MENU_CHOICE="$2"; shift ;;
-        -a|--action) ACTION_CHOICE="$2"; shift ;;
-        -f|--file) FILE_PATH_ARG="$2"; shift ;;
-        --bundle-id) BUNDLE_ID_ARG="$2"; shift ;;
-        --track) TRACK_ARG="$2"; shift ;;
-        --method) METHOD_ARG="$2"; shift ;;
+        --project) require_option_value "$1" "${2:-}"; PROJECT="$2"; shift ;;
+        --region) require_option_value "$1" "${2:-}"; REGION="$2"; shift ;;
+        --app-name) require_option_value "$1" "${2:-}"; APP_NAME="$2"; shift ;;
+        --type) require_option_value "$1" "${2:-}"; TYPE="$2"; shift ;;
+        --base-url) require_option_value "$1" "${2:-}"; BASE_URL="$2"; shift ;;
+        --database) require_option_value "$1" "${2:-}"; DATABASE="$2"; shift ;;
+        --icon) require_option_value "$1" "${2:-}"; ICON="$2"; shift ;;
+        --notes) require_option_value "$1" "${2:-}"; NOTES="$2"; shift ;;
+        --project-key) require_option_value "$1" "${2:-}"; PROJECT_KEY="$2"; shift ;;
+        --branch-name) require_option_value "$1" "${2:-}"; BRANCH_NAME="$2"; shift ;;
+        --firebase-project) require_option_value "$1" "${2:-}"; FIREBASE_PROJECT="$2"; shift ;;
+        --login-fastlane) LOGIN_FASTLANE_MODE=true ;;
+        -m|--menu) require_option_value "$1" "${2:-}"; MENU_CHOICE="$2"; shift ;;
+        -a|--action) require_option_value "$1" "${2:-}"; ACTION_CHOICE="$2"; shift ;;
+        --app-type|--types) require_option_value "$1" "${2:-}"; APP_TYPE_FILTER="$2"; shift ;;
+        --worktree-path) require_option_value "$1" "${2:-}"; WORKTREE_PATH="$2"; shift ;;
+        --dry-run|--no-execute) DRY_RUN=true; NON_INTERACTIVE=true ;;
+        --non-interactive|--no-prompt) NON_INTERACTIVE=true ;;
+        -f|--file) require_option_value "$1" "${2:-}"; FILE_PATH_ARG="$2"; shift ;;
+        --bundle-id) require_option_value "$1" "${2:-}"; BUNDLE_ID_ARG="$2"; shift ;;
+        --track) require_option_value "$1" "${2:-}"; TRACK_ARG="$2"; shift ;;
+        --method) require_option_value "$1" "${2:-}"; METHOD_ARG="$2"; shift ;;
         *) 
             # Jika argumen berupa durasi waktu (15m, 1h, 30s)
             if [[ "$1" =~ ^[0-9]+[mhsd]$ ]]; then
@@ -184,7 +225,12 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-ORIGINAL_ARGS="$*"
+if [ "$LOGIN_FASTLANE_MODE" = true ]; then
+    if [ "$DRY_RUN" = true ]; then
+        exec bash "${SCRIPT_DIR}/scripts/login_fastlane.sh" --spawn-terminal --dry-run
+    fi
+    exec bash "${SCRIPT_DIR}/scripts/login_fastlane.sh" --spawn-terminal
+fi
 
 LOG_FILE="${SCRIPT_DIR}/release_scheduler.log"
 log_action() {
@@ -195,19 +241,23 @@ log_action() {
 
 wait_if_scheduled() {
     if [ -n "$DELAY_TIME" ] && [ "${ALREADY_WAITED:-false}" != "true" ]; then
-        log_action "INFO" "Scheduled release started. Waiting for $DELAY_TIME. Args: $ORIGINAL_ARGS"
+        log_action "INFO" "Scheduled release started. Waiting for $DELAY_TIME. Args: $ORIGINAL_ARGS_LOG"
         echo "============================================================"
         echo "⏳ MENJADWALKAN EKSEKUSI DI BACKGROUND..."
         echo "============================================================"
         echo "Script akan berjalan dalam $DELAY_TIME."
         echo "Anda dapat menutup terminal ini dengan aman."
         
-        # Eksekusi background menggunakan nohup
-        # Kita menggunakan exec untuk menggantikan current process atau spawn baru yang disown
-        # Tapi karena ini bash function, kita spawn script ini lagi tanpa argumen delay
-        
-        local clean_args=$(echo "$ORIGINAL_ARGS" | sed -E "s/\\b[0-9]+[mhsd]\\b//g")
-        nohup bash -c "sleep $DELAY_TIME && \"${SCRIPT_DIR}/release.sh\" $clean_args" >> "$LOG_FILE" 2>&1 &
+        local clean_args=()
+        local arg
+        for arg in "${ORIGINAL_ARGS[@]}"; do
+            if [[ "$arg" =~ ^[0-9]+[mhsd]$ ]]; then
+                continue
+            fi
+            clean_args+=("$arg")
+        done
+
+        nohup env ALREADY_WAITED=true bash -c 'delay="$1"; shift; sleep "$delay"; exec "$@"' _ "$DELAY_TIME" "${SCRIPT_DIR}/release.sh" "${clean_args[@]}" >> "$LOG_FILE" 2>&1 &
         local pid=$!
         
         echo "✅ Proses berjalan di background (PID: $pid)."
@@ -220,6 +270,230 @@ wait_if_scheduled() {
 generate_id() {
     # Menghapus spasi dan semua karakter non-alfanumerik, lalu ubah ke lowercase
     echo "$1" | sed 's/[^a-zA-Z0-9]//g' | tr 'A-Z' 'a-z'
+}
+
+action_label() {
+    case "$1" in
+        1) echo "Setup Konfigurasi" ;;
+        2) echo "Change Icon" ;;
+        3) echo "Rebrand Package Name/Bundle ID" ;;
+        4) echo "Bump Version" ;;
+        5) echo "Clean & Pod Install" ;;
+        6) echo "Update Play Console Dashboard ID" ;;
+        7) echo "Full Deploy iOS" ;;
+        8) echo "Create Appstore" ;;
+        9) echo "Push Metadata (App Store)" ;;
+        10) echo "Complete Appstore Info" ;;
+        11) echo "Build IPA" ;;
+        12) echo "Upload IPA & Submit Testflight" ;;
+        13) echo "Submit Testflight (Tanpa Upload)" ;;
+        14) echo "Submit Appstore Review" ;;
+        15) echo "Request Unlisted Distribution" ;;
+        16) echo "Full Deploy Android" ;;
+        17) echo "Create Playstore" ;;
+        18) echo "Setup Playstore Info" ;;
+        19) echo "Upload Playstore Listing" ;;
+        20) echo "Build APK" ;;
+        21) echo "Upload to Google Drive (APK)" ;;
+        22) echo "Build AAB" ;;
+        23) echo "Upload Playstore (AAB)" ;;
+        24) echo "Submit Playstore (Playwright UI)" ;;
+        *) echo "Unknown action" ;;
+    esac
+}
+
+filtered_type_var_name() {
+    local target_id="$1"
+    local clean_target_id
+    clean_target_id=$(printf '%s' "$target_id" | tr -c 'a-zA-Z0-9_' '_')
+    echo "FILTERED_TYPE_${clean_target_id}"
+}
+
+set_filtered_type() {
+    local target_id="$1"
+    local type_value="$2"
+    local var_name
+    var_name=$(filtered_type_var_name "$target_id")
+    printf -v "$var_name" '%s' "$type_value"
+    export "$var_name"
+}
+
+get_active_types() {
+    local target_id="$1"
+    local var_name dynamic_type
+
+    if [ -n "$APP_TYPE_FILTER" ]; then
+        echo "$APP_TYPE_FILTER"
+        return
+    fi
+
+    var_name=$(filtered_type_var_name "$target_id")
+    dynamic_type="${!var_name:-}"
+    if [ -n "$dynamic_type" ]; then
+        echo "$dynamic_type"
+        return
+    fi
+
+    jq -r ".\"$target_id\".Project.Type // empty" "$PROJECT_FILE"
+}
+
+validate_target_exists() {
+    local target_id="$1"
+
+    if ! jq -e ".\"$target_id\"" "$PROJECT_FILE" >/dev/null 2>&1; then
+        echo "❌ Project '$target_id' tidak ditemukan di projects.json."
+        exit 1
+    fi
+}
+
+validate_app_type_for_target() {
+    local target_id="$1"
+    local requested_types="$2"
+    local available_types requested_type available_type matched
+
+    available_types=$(jq -r ".\"$target_id\".Project.Type // empty" "$PROJECT_FILE")
+    if [ -z "$available_types" ]; then
+        echo "❌ Project '$target_id' belum memiliki tipe aplikasi di projects.json."
+        exit 1
+    fi
+
+    IFS=',' read -ra REQUESTED_TYPES_ARR <<< "$requested_types"
+    for requested_type in "${REQUESTED_TYPES_ARR[@]}"; do
+        requested_type=$(echo "$requested_type" | xargs)
+        if [ -z "$requested_type" ]; then
+            continue
+        fi
+
+        matched=false
+        IFS=',' read -ra AVAILABLE_TYPES_ARR <<< "$available_types"
+        for available_type in "${AVAILABLE_TYPES_ARR[@]}"; do
+            available_type=$(echo "$available_type" | xargs)
+            if [ "$requested_type" = "$available_type" ]; then
+                matched=true
+                break
+            fi
+        done
+
+        if [ "$matched" != true ]; then
+            echo "❌ Tipe aplikasi '$requested_type' tidak ditemukan untuk project '$target_id'."
+            echo "Tipe yang tersedia: $available_types"
+            exit 1
+        fi
+    done
+}
+
+validate_selected_targets() {
+    local target_id active_types
+
+    for target_id in "${SELECTED_TARGETS[@]}"; do
+        validate_target_exists "$target_id"
+        active_types=$(get_active_types "$target_id")
+        validate_app_type_for_target "$target_id" "$active_types"
+    done
+}
+
+expand_path() {
+    local path_value="$1"
+    printf '%s' "${path_value/#\~/$HOME}"
+}
+
+validate_worktree_override() {
+    if [ -z "$WORKTREE_PATH" ]; then
+        return
+    fi
+
+    if [ -z "$APP_TYPE_FILTER" ]; then
+        echo "❌ --worktree-path wajib dipakai bersama --app-type agar override path tidak ambigu."
+        exit 1
+    fi
+
+    if [[ "$APP_TYPE_FILTER" == *","* ]]; then
+        echo "❌ --worktree-path hanya bisa dipakai untuk satu --app-type."
+        exit 1
+    fi
+
+    WORKTREE_PATH=$(expand_path "$WORKTREE_PATH")
+    if [ ! -d "$WORKTREE_PATH" ]; then
+        echo "❌ Worktree path tidak ditemukan: $WORKTREE_PATH"
+        exit 1
+    fi
+
+    export RELEASE_HUB_WORKTREE_TYPE="$APP_TYPE_FILTER"
+    export RELEASE_HUB_WORKTREE_PATH="$WORKTREE_PATH"
+}
+
+app_location_for_type() {
+    local type_name="$1"
+    local raw_location=""
+
+    if [ -n "${RELEASE_HUB_WORKTREE_PATH:-}" ] && [ "$type_name" = "${RELEASE_HUB_WORKTREE_TYPE:-}" ]; then
+        printf '%s' "$RELEASE_HUB_WORKTREE_PATH"
+        return
+    fi
+
+    raw_location=$(jq -r ".types[\"$type_name\"].location // empty" "$CONFIG_FILE")
+    if [ -n "$raw_location" ]; then
+        eval echo "$raw_location"
+    fi
+}
+
+print_project_creation_dry_run_summary() {
+    echo "============================================================"
+    echo "🧪 DRY RUN - PROJECT BARU TIDAK DITULIS KE projects.json"
+    echo "============================================================"
+    echo "Project Key  : ${PROJECT_KEY:-[Auto-generate]}"
+    echo "Tipe Aplikasi: ${TYPE:-HRM Apps}"
+    echo "Project Name : $PROJECT"
+    echo "Region       : ${REGION:-Indonesia}"
+    echo "Base URL     : $BASE_URL"
+    echo "Database     : $DATABASE"
+    echo "Branch Name  : ${BRANCH_NAME:-[Sama dengan Project Key]}"
+    echo "Base Nama App: $APP_NAME"
+    echo "Firebase Proj: $FIREBASE_PROJECT"
+    echo "Icon         : $ICON"
+    echo "============================================================"
+}
+
+validate_project_creation_fields() {
+    local missing=()
+
+    [ -z "$PROJECT" ] && missing+=("--project")
+    [ -z "$APP_NAME" ] && missing+=("--app-name")
+    [ -z "$TYPE" ] && missing+=("--type")
+    [ -z "$BASE_URL" ] && missing+=("--base-url")
+    [ -z "$DATABASE" ] && missing+=("--database")
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "❌ Field wajib untuk create project non-interactive belum lengkap: ${missing[*]}"
+        exit 1
+    fi
+}
+
+print_dry_run_summary() {
+    echo "============================================================"
+    echo "🧪 DRY RUN - TIDAK ADA PROSES BUILD/UPLOAD/RELEASE YANG DIJALANKAN"
+    echo "============================================================"
+    echo "Target project: ${SELECTED_TARGETS[*]}"
+    echo "Aksi:"
+    for action in "${ACTION_ARRAY[@]}"; do
+        if [ -n "$action" ]; then
+            echo "  - $action: $(action_label "$action")"
+        fi
+    done
+    echo "------------------------------------------------------------"
+    for target_id in "${SELECTED_TARGETS[@]}"; do
+        local project_name active_types
+        project_name=$(jq -r ".\"$target_id\".Project.\"Project Name\" // empty" "$PROJECT_FILE")
+        active_types=$(get_active_types "$target_id")
+        echo "Project: $target_id"
+        echo "  Nama : $project_name"
+        echo "  Tipe : $active_types"
+        if [ -n "$WORKTREE_PATH" ]; then
+            echo "  Worktree Path: $WORKTREE_PATH"
+            echo "  Catatan      : Tidak mengubah config.json"
+        fi
+    done
+    echo "============================================================"
 }
 
 
@@ -238,10 +512,12 @@ on_exit() {
         fi
     fi
 
-    echo ""
-    echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
-    git checkout -- android/ ios/ >/dev/null 2>&1
-    rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
+    if [ "${RUN_CLEANUP:-false}" = true ]; then
+        echo ""
+        echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
+        git checkout -- android/ ios/ >/dev/null 2>&1
+        rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
+    fi
 
     if [ -f "${SCRIPT_DIR}/assets/done_sound.wav" ]; then
         afplay "${SCRIPT_DIR}/assets/done_sound.wav" >/dev/null 2>&1 &
@@ -251,8 +527,38 @@ trap on_exit EXIT
 
 PROJECT_FILE="${SCRIPT_DIR}/projects.json"
 
+if [ -n "$ACTION_CHOICE" ]; then
+    action_choice="$ACTION_CHOICE"
+    NON_INTERACTIVE=true
+fi
 
-if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$BUILD_ONLY_ID" ]; then
+if [ -n "$APP_TYPE_FILTER" ]; then
+    NON_INTERACTIVE=true
+fi
+
+if [ -n "$WORKTREE_PATH" ]; then
+    NON_INTERACTIVE=true
+fi
+
+if [ -n "$UPLOAD_ONLY_ID" ]; then
+    SELECTED_TARGETS=("$UPLOAD_ONLY_ID")
+    NON_INTERACTIVE=true
+elif [ -n "$BUILD_ONLY_ID" ]; then
+    SELECTED_TARGETS=("$BUILD_ONLY_ID")
+    NON_INTERACTIVE=true
+elif [ -n "$RUN_ID" ]; then
+    SELECTED_TARGETS=("$RUN_ID")
+    NON_INTERACTIVE=true
+fi
+
+
+if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
+    if [ "$NON_INTERACTIVE" = true ] && [ -z "$MENU_CHOICE" ]; then
+        echo "❌ Target project wajib diisi untuk mode non-interaktif."
+        echo "Contoh: release smkgemanusantara -a '22' --app-type 'HRM Apps'"
+        exit 1
+    fi
+
     if [ -s "$PROJECT_FILE" ] && command -v jq >/dev/null 2>&1; then
         # Ekstrak data project HANYA SEKALI
         projects_data=$(jq -r 'to_entries | .[] | "\(.key)|\(.value.Project["Project Name"])"' "$PROJECT_FILE")
@@ -272,6 +578,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         echo "J) Import Project from Branch (Reverse Setup)"
         echo "K) Login Google Drive"
         echo "L) Push Metadata (App Store) Manual"
+        echo "M) Login Fastlane (App Store Connect)"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -290,7 +597,7 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
             project_input="$MENU_CHOICE"
             echo "Pilihan otomatis (dari argumen): $project_input"
         else
-            echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J/K/L): "
+            echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J/K/L/M): "
             read -r project_input
         fi
         
@@ -463,6 +770,13 @@ if [ -z "$RUN_ID" ] && [ -z "$PROJECT" ] && [ -z "$UPLOAD_ONLY_ID" ] && [ -z "$B
         elif [[ "$project_input" =~ ^[Ll]$ ]]; then
             ruby "${SCRIPT_DIR}/scripts/push_appstore_metadata.rb" "manual"
             exit 0
+        elif [[ "$project_input" =~ ^[Mm]$ ]]; then
+            if [ "$DRY_RUN" = true ]; then
+                bash "${SCRIPT_DIR}/scripts/login_fastlane.sh" --spawn-terminal --dry-run
+            else
+                bash "${SCRIPT_DIR}/scripts/login_fastlane.sh" --spawn-terminal
+            fi
+            exit 0
         fi
 
         
@@ -549,9 +863,7 @@ fi
                         done
                         
                         if [ -n "$NEW_TYPE" ]; then
-                            # Dynamic variable export for this target
-                            clean_target_id=$(echo "$TARGET_ID" | tr '-' '_')
-                            eval "export FILTERED_TYPE_${clean_target_id}=\"\$NEW_TYPE\""
+                            set_filtered_type "$TARGET_ID" "$NEW_TYPE"
                         fi
                     fi
                 fi
@@ -589,6 +901,10 @@ fi
                 if [ -n "$ACTION_CHOICE" ]; then
                     action_choice="$ACTION_CHOICE"
                     echo "Pilihan otomatis (dari argumen): $action_choice"
+                elif [ "$NON_INTERACTIVE" = true ]; then
+                    echo "❌ --action wajib diisi untuk mode non-interaktif."
+                    echo "Contoh: release $TARGET_ID -a '22' --app-type 'HRM Apps'"
+                    exit 1
                 else
                     echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 1 22 23): "
                     read -r action_choice
@@ -614,15 +930,24 @@ if [ "$UPLOAD_ONLY_MODE" = true ]; then
         action_choice="21"
     fi
 elif [ "$BUILD_ONLY_MODE" = true ]; then
-    action_choice="11 19 22"
+    action_choice="11 20 22"
 elif [ -n "$RUN_ID" ]; then
     # Full default behavior for direct RUN_ID
-    action_choice="1 2 3 19 21"
+    action_choice="${action_choice:-1 2 3 19 21}"
 fi
 
 # Jika menggunakan --project, tambahkan ke projects.json
 if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
-    while true; do
+    if [ "$NON_INTERACTIVE" = true ]; then
+        validate_project_creation_fields
+        if [ "$DRY_RUN" = true ]; then
+            print_project_creation_dry_run_summary
+            trap - EXIT
+            exit 0
+        fi
+        echo "ℹ️ Mode non-interactive: memakai argumen --project tanpa prompt konfirmasi."
+    else
+        while true; do
         echo "============================================================"
         echo "➕ KONFIRMASI DATA PROJECT BARU"
         echo "============================================================"
@@ -655,6 +980,7 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
             echo ""
         fi
     done
+    fi
     # Generate ID dari Project Name
     if [ -n "$PROJECT_KEY" ]; then
         ID="$PROJECT_KEY"
@@ -767,7 +1093,34 @@ if [ -z "$action_choice" ]; then
 fi
 
 # Parsing ACTION ARRAY
-IFS=' ' read -ra ACTION_ARRAY <<< "$(echo "$action_choice" | tr ',' ' ')"
+ACTION_INPUT=$(echo "$action_choice" | tr ',' ' ')
+IFS=' ' read -ra ACTION_ARRAY <<< "$ACTION_INPUT"
+
+for action in "${ACTION_ARRAY[@]}"; do
+    if [ -z "$action" ]; then
+        continue
+    fi
+    if ! [[ "$action" =~ ^([1-9]|1[0-9]|2[0-4])$ ]]; then
+        echo "❌ Aksi tidak valid: $action"
+        echo "Gunakan nomor aksi 1-24. Lihat daftar dengan: release --help"
+        exit 1
+    fi
+    if [[ "$action" == "16" || "$action" == "19" ]]; then
+        export GLOBAL_METHOD_CHOICE="${METHOD_ARG:-1}"
+    fi
+done
+
+if [ ${#SELECTED_TARGETS[@]} -gt 0 ]; then
+    validate_selected_targets
+fi
+
+validate_worktree_override
+
+if [ "$DRY_RUN" = true ]; then
+    print_dry_run_summary
+    trap - EXIT
+    exit 0
+fi
 
 # Global setup untuk Playwright
 if [[ " ${ACTION_ARRAY[*]} " =~ " 6 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 16 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 17 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 18 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 19 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 24 " ]]; then
@@ -891,13 +1244,7 @@ execute_action() {
                 ;;
         esac
         
-        clean_target_id=$(echo "$TARGET_ID" | tr '-' '_')
-        dynamic_type=$(eval echo "\$FILTERED_TYPE_${clean_target_id}")
-        if [ -z "$dynamic_type" ]; then
-            ACTIVE_TYPES=$(jq -r ".\"$TARGET_ID\".Project.Type // empty" "$PROJECT_FILE")
-        else
-            ACTIVE_TYPES="$dynamic_type"
-        fi
+        ACTIVE_TYPES=$(get_active_types "$TARGET_ID")
         IFS=',' read -ra ACTIVE_TYPES_ARR <<< "$ACTIVE_TYPES"
         
         for current_type in "${ACTIVE_TYPES_ARR[@]}"; do
@@ -923,7 +1270,7 @@ execute_action() {
                        REGION=$(jq -r ".\"$TARGET_ID\".Project.Region // empty" "$PROJECT_FILE")
                        BASE_URL=$(jq -r ".\"$TARGET_ID\".Project.\"Base URL\" // empty" "$PROJECT_FILE")
                        DATABASE=$(jq -r ".\"$TARGET_ID\".Project.Database // empty" "$PROJECT_FILE")
-                       bash "$script_file" "$TARGET_ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
+                       RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" bash "$script_file" "$TARGET_ID" "$REGION" "$APP_NAME" "$type_clean" "$BASE_URL" "$DATABASE" "$APP_PACKAGE_NAME" || { echo "❌ Proses setup $type_clean gagal!"; exit 1; }
                    fi
                    ;;
                 2)
@@ -932,8 +1279,7 @@ execute_action() {
                        bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
                    fi
                    
-                   RAW_LOCATION=$(jq -r ".types[\"$PRIMARY_TYPE\"].location // empty" "$CONFIG_FILE")
-                   APP_LOCATION=$(eval echo "$RAW_LOCATION")
+                   APP_LOCATION=$(app_location_for_type "$PRIMARY_TYPE")
                    OPTIMIZED_ICON="${SCRIPT_DIR}/icon/icon.png"
                    if [ -n "$APP_LOCATION" ] && [ -d "$APP_LOCATION" ] && [ -f "$OPTIMIZED_ICON" ]; then
                        echo "  🖼️  Menerapkan icon kustom ke project $APP_LOCATION..."
@@ -959,12 +1305,11 @@ execute_action() {
                    fi
                    ;;
                 3)
-                   bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
+                   RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" bash "${SCRIPT_DIR}/scripts/rebrand.sh" "$APP_PACKAGE_NAME" || { echo "❌ Proses rebrand gagal!"; exit 1; }
                    ;;
-                4) ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
+                4) RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
                 5) 
-                   RAW_LOCATION=$(jq -r ".types[\"$PRIMARY_TYPE\"].location // empty" "$CONFIG_FILE")
-                   APP_LOCATION=$(eval echo "$RAW_LOCATION")
+                   APP_LOCATION=$(app_location_for_type "$PRIMARY_TYPE")
                    if [ -z "$APP_LOCATION" ] || [ ! -d "$APP_LOCATION" ]; then
                        echo "❌ Folder project untuk tipe $PRIMARY_TYPE tidak ditemukan ($APP_LOCATION)"
                        exit 1
@@ -989,7 +1334,7 @@ execute_action() {
                 10) ruby "${SCRIPT_DIR}/scripts/setup_appstore_info.rb" "$TARGET_ID" "$type_clean" || echo "❌ setup_appstore_info.rb gagal dijalankan." ;;
                 11) 
                    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
-                       BUILD_TARGET_IPA=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
+                       BUILD_TARGET_IPA=true SKIP_UPLOAD=true RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
                    else
                        echo "❌ Script build_app.sh tidak ditemukan!"; exit 1
                    fi
@@ -1013,7 +1358,7 @@ execute_action() {
                    ;;
                 20) 
                    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
-                       BUILD_TARGET_APK=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
+                       BUILD_TARGET_APK=true SKIP_UPLOAD=true RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
                    else
                        echo "❌ Script build_app.sh tidak ditemukan!"; exit 1
                    fi
@@ -1024,7 +1369,7 @@ execute_action() {
                    ;;
                 22) 
                    if [ -f "${SCRIPT_DIR}/build_app.sh" ]; then
-                       BUILD_TARGET_AAB=true SKIP_UPLOAD=true bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
+                       BUILD_TARGET_AAB=true SKIP_UPLOAD=true RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" bash "${SCRIPT_DIR}/build_app.sh" "$TARGET_ID" "$type_clean" || { echo "❌ Proses build gagal!"; exit 1; }
                    else
                        echo "❌ Script build_app.sh tidak ditemukan!"; exit 1
                    fi
@@ -1036,6 +1381,8 @@ execute_action() {
         done
     done
 }
+
+RUN_CLEANUP=true
 
 for CURRENT_ACTION in "${ACTION_ARRAY[@]}"; do
     if [ -z "$CURRENT_ACTION" ]; then

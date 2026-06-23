@@ -25,6 +25,7 @@ config = JSON.parse(File.read(config_path))
 
 # 3. Handle arguments or interactive selection
 run_id = ARGV[0]
+requested_app_type = ARGV[1]
 
 if run_id.nil? || run_id.empty?
   puts "============================================================"
@@ -60,14 +61,27 @@ unless app_data
   exit 1
 end
 
-app_type = (app_data['Project']['Type'] || "").split(",").first.strip
-location_raw = config['types'][app_type]['location']
-unless location_raw
-  puts "❌ Error: Lokasi aplikasi untuk tipe '#{app_type}' tidak ditemukan di config.json."
+available_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
+app_type = requested_app_type && !requested_app_type.empty? ? requested_app_type.strip : available_types.first
+
+unless app_type && !app_type.empty? && available_types.include?(app_type)
+  puts "❌ Error: Tipe aplikasi '#{app_type}' tidak ditemukan untuk project '#{run_id}'."
+  puts "Tipe yang tersedia: #{available_types.join(', ')}"
   exit 1
 end
 
-project_location = File.expand_path(location_raw)
+if ENV['RELEASE_HUB_WORKTREE_PATH'] && !ENV['RELEASE_HUB_WORKTREE_PATH'].empty? &&
+   (ENV['RELEASE_HUB_WORKTREE_TYPE'].nil? || ENV['RELEASE_HUB_WORKTREE_TYPE'].empty? || ENV['RELEASE_HUB_WORKTREE_TYPE'] == app_type)
+  project_location = File.expand_path(ENV['RELEASE_HUB_WORKTREE_PATH'])
+else
+  location_raw = config.dig('types', app_type, 'location')
+  unless location_raw
+    puts "❌ Error: Lokasi aplikasi untuk tipe '#{app_type}' tidak ditemukan di config.json."
+    exit 1
+  end
+
+  project_location = File.expand_path(location_raw)
+end
 pubspec_path = File.join(project_location, "pubspec.yaml")
 
 unless File.exist?(pubspec_path)

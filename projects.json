@@ -281,18 +281,21 @@
     "Branch": {
       "HRM Apps": "primaboga"
     },
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
     "Project": {
-      "App Name": {
-        "HRM Apps": "PNI HRIS"
-      },
-      "Project Name": "Primaboga",
+      "Project Name": "PT Primaboga Nusantara Inti",
       "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "PNI HRM"
+      },
       "Type": "HRM Apps",
       "Base URL": "https://primaboga.hashmicro.co",
-      "Database": "pni-live",
-      "Icon": ""
+      "Database": "primaboga-live",
+      "Icon": "https://drive.google.com/open?id=1Yxf2yQyJKhh2wRFZ_zE_4W6SBfesFTVa"
     },
-    "Play Console Dashboard": {},
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.primaboga"
     },
@@ -311,8 +314,8 @@
       "Project Name": "Pancaran",
       "Region": "Indonesia",
       "Type": "HRM Apps",
-      "Base URL": "https://pancaran.hash-017.com",
-      "Database": "pancaran-live0503",
+      "Base URL": "https://talenthub.pancaran-group.co.id",
+      "Database": "pancaran-live",
       "Icon": ""
     },
     "Play Console Dashboard": {},
@@ -399,6 +402,140 @@
     },
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.pitala"
+    }
+  },
+  "onealpha": {
+    "Branch": {
+      "HRM Apps": "onealpha"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4973677963465154875"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "HM X One Alpha Comm INC",
+      "Region": "Philippines",
+      "App Name": {
+        "HRM Apps": "One Alpha Comm INC"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://onealpha.hash-029.com",
+      "Database": "onealpha-score22-ph-db",
+      "Icon": "https://drive.google.com/open?id=1KJSMSVRSyd_57njB1ERds7Za5SiBKNaC"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.onealpha"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.onealpha"
+    }
+  },
+  "sunasia": {
+    "Branch": {
+      "HRM Apps": "sunasia"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "hashmicro-production-17",
+    "Project": {
+      "Project Name": "SunAsia Energy Inc.",
+      "Region": "Philippines",
+      "App Name": {
+        "HRM Apps": "SunAsia HR"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://sunasia.hash-029.com",
+      "Database": "sunasia-score22-ph-db",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.sunasia"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.sunasia"
+    }
+  },
+  "leo": {
+    "Branch": {
+      "HRM Apps": "leo"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "LEO HRIS"
+      },
+      "Project Name": "PT Leo Anugerah Sukses",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://leo.hashmicro.co",
+      "Database": "leo-live",
+      "Icon": "https://drive.google.com/open?id=1CYOOVoL3fviw8aW4RRkfFnY5Bqw-lkwE"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4975628249215419410"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.leo"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.leo"
+    }
+  },
+  "dutabanguncipta": {
+    "Branch": {
+      "Approval Apps": "dutabanguncipta",
+      "HRM Apps": "dutabanguncipta"
+    },
+    "Play Console Dashboard": {
+      "Approval Apps": "4976244897860811222",
+      "HRM Apps": "4973943635678091547"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Duta Bangun Cipta",
+      "Region": "Indonesia",
+      "App Name": {
+        "Approval Apps": "Duta Bangun Cipta Approval",
+        "HRM Apps": "Duta Bangun Cipta"
+      },
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://dutabanguncipta.hash-025.com",
+      "Database": "DBC-Live",
+      "Icon": "https://drive.google.com/open?id=18A4fWD3On8fBdz1DE0Tx2oiHWy4__b10"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.approval.dutabanguncipta",
+      "HRM Apps": "com.hashmicro.eva.dutabanguncipta"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.approval.dutabanguncipta",
+      "HRM Apps": "com.hashmicro.eva.dutabanguncipta"
+    }
+  },
+  "perumdatuahsekata": {
+    "Branch": {
+      "HRM Apps": "perumdatuahsekata"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4973183042902726502"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Perumda Tuah Sekata",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Tuah Sekata HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://tuahsekata.hash-015.com",
+      "Database": "",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.perumdatuahsekata"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.perumdatuahsekata"
     }
   }
 }

@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Panduan Manual Release HRM Apps dan Approval Apps</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #1f2933;
+      line-height: 1.5;
+      font-size: 11pt;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 { color: #102a43; line-height: 1.25; }
+    h1 { font-size: 25pt; margin: 0 0 16px; padding-bottom: 12px; border-bottom: 3px solid #2563eb; }
+    h2 { font-size: 17pt; margin-top: 28px; padding-top: 8px; border-top: 1px solid #d9e2ec; break-after: avoid; }
+    h3 { font-size: 13pt; margin-top: 18px; break-after: avoid; }
+    p, li { orphans: 3; widows: 3; }
+    code {
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+    }
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      break-inside: avoid;
+      font-size: 9pt;
+    }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    blockquote { border-left: 4px solid #2563eb; margin-left: 0; padding-left: 14px; color: #52606d; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; break-inside: avoid; }
+    th, td { border: 1px solid #bcccdc; padding: 6px 8px; vertical-align: top; }
+    th { background: #f0f4f8; }
+    a { color: #1d4ed8; text-decoration: none; }
+    hr { border: 0; border-top: 1px solid #d9e2ec; margin: 22px 0; }
+    ul, ol { padding-left: 22px; }
+    .cover-note {
+      margin: 12px 0 24px;
+      padding: 10px 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      color: #1e3a8a;
+    }
+    @media print {
+      h2 { page-break-after: avoid; }
+      pre, table { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cover-note"><strong>Dokumen manual:</strong> panduan ini ditulis untuk flow release tanpa menjalankan script otomatis.</div>
+  <h1 id="panduan-manual-release-hrm-apps-dan-approval-apps">Panduan Manual Release HRM Apps dan Approval Apps</h1>
+<p>Panduan ini dibuat untuk orang yang tidak terlalu teknis. Tujuannya adalah menjelaskan alur dari awal sampai aplikasi bisa dibuat di Play Store, App Store Connect, TestFlight, dan siap direlease.</p>
+<p>Panduan ini <strong>tanpa menjalankan script otomatis</strong>. Release Hub hanya dipakai sebagai tempat data project dan referensi nomor menu/flow, bukan untuk mengeksekusi release otomatis.</p>
+<hr />
+<h2 id="1-gambaran-besar">1. Gambaran Besar</h2>
+<p>Ada 2 jenis aplikasi:</p>
+<ol>
+<li>
+<p><strong>HRM Apps</strong>
+   - Aplikasi HRIS/HRM untuk employee, attendance, payroll, leave, reimbursement, dan fitur HR lain.
+   - Package/Bundle ID biasanya memakai pola:</p>
+<ul>
+<li><code>com.hashmicro.eva.nama_project</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Approval Apps</strong>
+   - Aplikasi untuk approval/request/approval workflow.
+   - Package/Bundle ID biasanya memakai pola:</p>
+<ul>
+<li><code>com.hashmicro.approval.nama_project</code></li>
+</ul>
+</li>
+</ol>
+<p>Setiap aplikasi yang akan direlease perlu punya 2 identitas penting:</p>
+<ul>
+<li><strong>Android Package ID</strong>: dipakai oleh Google Play Console.</li>
+<li><strong>iOS Bundle ID</strong>: dipakai oleh Apple Developer dan App Store Connect.</li>
+</ul>
+<p>Biasanya Android Package ID dan iOS Bundle ID dibuat sama agar mudah dikelola.</p>
+<p>Contoh:</p>
+<ul>
+<li>HRM Apps:</li>
+<li>App name: <code>Bumi Aki HRIS</code></li>
+<li>
+<p>Package/Bundle ID: <code>com.hashmicro.eva.bumiaki</code></p>
+</li>
+<li>
+<p>Approval Apps:</p>
+</li>
+<li>App name: <code>Bumi Aki Approval</code></li>
+<li>Package/Bundle ID: <code>com.hashmicro.approval.bumiaki</code></li>
+</ul>
+<hr />
+<h2 id="2-akun-dan-akses-yang-harus-disiapkan">2. Akun dan Akses yang Harus Disiapkan</h2>
+<p>Sebelum mulai, pastikan punya akses berikut:</p>
+<h3 id="21-akses-google">2.1 Akses Google</h3>
+<p>Dibutuhkan untuk Android release.</p>
+<ul>
+<li>Akun Google yang punya akses ke <strong>Google Play Console</strong>.</li>
+<li>Akses ke project/app client di Play Console.</li>
+<li>Akses untuk membuat aplikasi baru.</li>
+<li>Akses untuk upload AAB ke release track.</li>
+</ul>
+<p>Link:</p>
+<ul>
+<li>Google Play Console: https://play.google.com/console</li>
+</ul>
+<h3 id="22-akses-apple">2.2 Akses Apple</h3>
+<p>Dibutuhkan untuk iOS release.</p>
+<ul>
+<li>Apple ID yang masuk ke <strong>Apple Developer Program</strong>.</li>
+<li>Akses ke <strong>Certificates, Identifiers &amp; Profiles</strong>.</li>
+<li>Akses ke <strong>App Store Connect</strong>.</li>
+<li>Role yang cukup untuk membuat app, upload build, TestFlight, dan submit review.</li>
+</ul>
+<p>Link:</p>
+<ul>
+<li>Apple Developer: https://developer.apple.com/account</li>
+<li>App Store Connect: https://appstoreconnect.apple.com</li>
+</ul>
+<h3 id="23-akses-repository">2.3 Akses Repository</h3>
+<p>Pastikan punya akses ke repo aplikasi:</p>
+<ul>
+<li>HRM Apps:</li>
+<li>
+<p>Lokasi umum: <code>~/Projects/HashMicro/HrmApp</code></p>
+</li>
+<li>
+<p>Approval Apps:</p>
+</li>
+<li>
+<p>Lokasi umum: <code>~/Projects/HashMicro/ApprovalApp</code></p>
+</li>
+<li>
+<p>Release Hub:</p>
+</li>
+<li>Lokasi umum: <code>~/Projects/+Lab/release_hub</code></li>
+</ul>
+<hr />
+<h2 id="3-setup-awal-laptop">3. Setup Awal Laptop</h2>
+<p>Bagian ini dilakukan sekali di laptop baru atau laptop yang belum pernah dipakai release.</p>
+<h3 id="31-install-xcode">3.1 Install Xcode</h3>
+<p>Xcode diperlukan untuk build iOS dan upload ke TestFlight/App Store.</p>
+<p>Langkah:</p>
+<ol>
+<li>Buka <strong>App Store</strong> di Mac.</li>
+<li>Cari <strong>Xcode</strong>.</li>
+<li>Install Xcode.</li>
+<li>Setelah selesai, buka Xcode sekali.</li>
+<li>Kalau muncul license agreement atau install additional components, klik setuju/install.</li>
+</ol>
+<p>Cek dari Terminal:</p>
+<pre><code class="language-bash">xcodebuild -version
+</code></pre>
+<p>Kalau muncul versi Xcode, berarti Xcode sudah terbaca.</p>
+<p>Jika diminta memilih command line tools:</p>
+<pre><code class="language-bash">sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+</code></pre>
+<p>Lalu cek lagi:</p>
+<pre><code class="language-bash">xcodebuild -version
+</code></pre>
+<h3 id="32-install-android-studio">3.2 Install Android Studio</h3>
+<p>Android Studio diperlukan untuk SDK Android, emulator, dan signing/build Android.</p>
+<p>Langkah:</p>
+<ol>
+<li>Download Android Studio dari:
+   - https://developer.android.com/studio</li>
+<li>Install seperti aplikasi Mac biasa.</li>
+<li>Buka Android Studio.</li>
+<li>Ikuti setup wizard.</li>
+<li>Pastikan Android SDK terinstall.</li>
+<li>Buka menu:
+   - Android Studio → Settings/Preferences → Languages &amp; Frameworks → Android SDK</li>
+<li>Pastikan minimal ada:
+   - Android SDK Platform terbaru.
+   - Android SDK Build-Tools.
+   - Android SDK Command-line Tools.</li>
+</ol>
+<p>Cek dari Terminal:</p>
+<pre><code class="language-bash">flutter doctor --android-licenses
+</code></pre>
+<p>Kalau diminta accept license, jawab <code>y</code> sampai selesai.</p>
+<h3 id="33-install-flutter">3.3 Install Flutter</h3>
+<p>Flutter diperlukan untuk build aplikasi Android dan iOS.</p>
+<p>Langkah umum:</p>
+<ol>
+<li>Download Flutter dari:
+   - https://docs.flutter.dev/get-started/install/macos</li>
+<li>Extract ke folder yang mudah, contoh:
+   - <code>~/development/flutter</code></li>
+<li>Tambahkan Flutter ke PATH.</li>
+</ol>
+<p>Contoh jika memakai zsh:</p>
+<pre><code class="language-bash">nano ~/.zshrc
+</code></pre>
+<p>Tambahkan:</p>
+<pre><code class="language-bash">export PATH=&quot;$PATH:$HOME/development/flutter/bin&quot;
+</code></pre>
+<p>Simpan, lalu jalankan:</p>
+<pre><code class="language-bash">source ~/.zshrc
+flutter --version
+</code></pre>
+<h3 id="34-jalankan-flutter-doctor">3.4 Jalankan Flutter Doctor</h3>
+<p>Flutter Doctor membantu mengecek apakah setup sudah lengkap.</p>
+<pre><code class="language-bash">flutter doctor
+</code></pre>
+<p>Yang ideal:</p>
+<ul>
+<li>Flutter OK.</li>
+<li>Android toolchain OK.</li>
+<li>Xcode OK.</li>
+<li>Android Studio OK.</li>
+<li>Connected device boleh kosong, tidak masalah untuk build release.</li>
+</ul>
+<p>Kalau ada error, selesaikan satu per satu sesuai instruksi dari <code>flutter doctor</code>.</p>
+<h3 id="35-install-cocoapods">3.5 Install CocoaPods</h3>
+<p>CocoaPods dibutuhkan untuk dependency iOS.</p>
+<pre><code class="language-bash">sudo gem install cocoapods
+pod --version
+</code></pre>
+<p>Kalau memakai Ruby environment tertentu, bisa jadi instalasi CocoaPods mengikuti setup internal tim.</p>
+<h3 id="36-install-tools-tambahan">3.6 Install Tools Tambahan</h3>
+<p>Beberapa tools yang sering diperlukan:</p>
+<pre><code class="language-bash">brew install jq
+brew install fastlane
+npm install -g firebase-tools
+</code></pre>
+<p>Install FlutterFire CLI:</p>
+<pre><code class="language-bash">dart pub global activate flutterfire_cli
+</code></pre>
+<p>Pastikan path Dart global aktif. Biasanya perlu menambahkan ini ke <code>~/.zshrc</code>:</p>
+<pre><code class="language-bash">export PATH=&quot;$PATH:$HOME/.pub-cache/bin&quot;
+</code></pre>
+<p>Cek:</p>
+<pre><code class="language-bash">firebase --version
+flutterfire --version
+fastlane --version
+jq --version
+</code></pre>
+<h3 id="37-login-ke-firebase-jika-dibutuhkan">3.7 Login ke Firebase Jika Dibutuhkan</h3>
+<pre><code class="language-bash">firebase login
+</code></pre>
+<p>Login memakai akun Google yang punya akses ke Firebase project HashMicro/client.</p>
+<hr />
+<h2 id="4-persiapan-data-client-sebelum-membuat-project">4. Persiapan Data Client Sebelum Membuat Project</h2>
+<p>Sebelum membuat app baru, kumpulkan data ini:</p>
+<ol>
+<li>
+<p><strong>Nama client/project</strong>
+   - Contoh: <code>Bumi Aki Group</code></p>
+</li>
+<li>
+<p><strong>Project key</strong>
+   - Nama pendek tanpa spasi, huruf kecil.
+   - Contoh: <code>bumiaki</code></p>
+</li>
+<li>
+<p><strong>Region</strong>
+   - Contoh: <code>Indonesia</code>, <code>Singapore</code>, <code>Philippines</code>, <code>Malaysia</code>.</p>
+</li>
+<li>
+<p><strong>Jenis aplikasi yang dibuat</strong>
+   - <code>HRM Apps</code>
+   - <code>Approval Apps</code>
+   - atau keduanya.</p>
+</li>
+<li>
+<p><strong>Nama app</strong>
+   - HRM: biasanya <code>[Nama Client] HRIS</code>.
+   - Approval: biasanya <code>[Nama Client] Approval</code>.</p>
+</li>
+<li>
+<p><strong>Base URL</strong>
+   - URL API/client.
+   - Contoh: <code>https://client.hashmicro.co</code></p>
+</li>
+<li>
+<p><strong>Database name</strong>
+   - Nama database client.</p>
+</li>
+<li>
+<p><strong>Icon aplikasi</strong>
+   - File PNG/JPG resolusi bagus.
+   - Idealnya 1024 x 1024 px.
+   - Jangan pakai gambar buram atau terlalu banyak detail kecil.</p>
+</li>
+<li>
+<p><strong>Firebase Project</strong> jika ada
+   - Jika belum ada, tanyakan ke PIC/lead apakah memakai default Firebase atau project khusus client.</p>
+</li>
+</ol>
+<hr />
+<h2 id="5-membuat-project-baru-di-release-hub">5. Membuat Project Baru di Release Hub</h2>
+<p>Release Hub menyimpan daftar client di file <code>projects.json</code>. File ini dipakai sebagai data pusat agar nama app, package ID, bundle ID, base URL, database, dan tipe aplikasi konsisten.</p>
+<p>Lokasi Release Hub:</p>
+<pre><code class="language-bash">cd ~/Projects/+Lab/release_hub
+</code></pre>
+<p>File penting:</p>
+<ul>
+<li><code>projects.json</code>: daftar project/client.</li>
+<li><code>config.json</code>: konfigurasi umum tipe aplikasi dan lokasi repo.</li>
+</ul>
+<h3 id="51-bentuk-data-project">5.1 Bentuk Data Project</h3>
+<p>Contoh data project yang punya HRM Apps dan Approval Apps:</p>
+<pre><code class="language-json">&quot;nama_project&quot;: {
+  &quot;Branch&quot;: {
+    &quot;Approval Apps&quot;: &quot;nama_project&quot;,
+    &quot;HRM Apps&quot;: &quot;nama_project&quot;
+  },
+  &quot;Play Console Dashboard&quot;: {
+    &quot;Approval Apps&quot;: &quot;&quot;,
+    &quot;HRM Apps&quot;: &quot;&quot;
+  },
+  &quot;Firebase Project&quot;: &quot;&quot;,
+  &quot;Project&quot;: {
+    &quot;Project Name&quot;: &quot;Nama Client&quot;,
+    &quot;Region&quot;: &quot;Indonesia&quot;,
+    &quot;App Name&quot;: {
+      &quot;Approval Apps&quot;: &quot;Nama Client Approval&quot;,
+      &quot;HRM Apps&quot;: &quot;Nama Client HRIS&quot;
+    },
+    &quot;Type&quot;: &quot;Approval Apps, HRM Apps&quot;,
+    &quot;Base URL&quot;: &quot;https://client.hashmicro.co&quot;,
+    &quot;Database&quot;: &quot;nama_database&quot;,
+    &quot;Icon&quot;: &quot;&quot;
+  },
+  &quot;Package ID&quot;: {
+    &quot;Approval Apps&quot;: &quot;com.hashmicro.approval.nama_project&quot;,
+    &quot;HRM Apps&quot;: &quot;com.hashmicro.eva.nama_project&quot;
+  },
+  &quot;Bundle ID&quot;: {
+    &quot;Approval Apps&quot;: &quot;com.hashmicro.approval.nama_project&quot;,
+    &quot;HRM Apps&quot;: &quot;com.hashmicro.eva.nama_project&quot;
+  }
+}
+</code></pre>
+<p>Penjelasan sederhana:</p>
+<ul>
+<li><code>nama_project</code>: kode pendek client.</li>
+<li><code>Branch</code>: nama branch Git untuk app tersebut.</li>
+<li><code>Play Console Dashboard</code>: ID dashboard Google Play setelah app dibuat.</li>
+<li><code>Firebase Project</code>: nama Firebase project jika ada.</li>
+<li><code>Project Name</code>: nama resmi client.</li>
+<li><code>Region</code>: negara/region client.</li>
+<li><code>App Name</code>: nama aplikasi yang tampil di HP.</li>
+<li><code>Type</code>: jenis aplikasi yang dimiliki client.</li>
+<li><code>Base URL</code>: alamat server API.</li>
+<li><code>Database</code>: database client.</li>
+<li><code>Icon</code>: link/path icon.</li>
+<li><code>Package ID</code>: identitas Android.</li>
+<li><code>Bundle ID</code>: identitas iOS.</li>
+</ul>
+<h3 id="52-jika-hanya-membuat-hrm-apps">5.2 Jika Hanya Membuat HRM Apps</h3>
+<p>Isi <code>Type</code> cukup:</p>
+<pre><code class="language-json">&quot;Type&quot;: &quot;HRM Apps&quot;
+</code></pre>
+<p>Gunakan pola:</p>
+<pre><code class="language-text">com.hashmicro.eva.nama_project
+</code></pre>
+<p>Contoh:</p>
+<pre><code class="language-text">com.hashmicro.eva.clientbaru
+</code></pre>
+<h3 id="53-jika-hanya-membuat-approval-apps">5.3 Jika Hanya Membuat Approval Apps</h3>
+<p>Isi <code>Type</code> cukup:</p>
+<pre><code class="language-json">&quot;Type&quot;: &quot;Approval Apps&quot;
+</code></pre>
+<p>Gunakan pola:</p>
+<pre><code class="language-text">com.hashmicro.approval.nama_project
+</code></pre>
+<p>Contoh:</p>
+<pre><code class="language-text">com.hashmicro.approval.clientbaru
+</code></pre>
+<h3 id="54-jika-membuat-hrm-apps-dan-approval-apps">5.4 Jika Membuat HRM Apps dan Approval Apps</h3>
+<p>Isi <code>Type</code>:</p>
+<pre><code class="language-json">&quot;Type&quot;: &quot;Approval Apps, HRM Apps&quot;
+</code></pre>
+<p>Buat 2 app name:</p>
+<ul>
+<li><code>Client Baru HRIS</code></li>
+<li><code>Client Baru Approval</code></li>
+</ul>
+<p>Buat 2 package/bundle ID:</p>
+<ul>
+<li><code>com.hashmicro.eva.clientbaru</code></li>
+<li><code>com.hashmicro.approval.clientbaru</code></li>
+</ul>
+<h3 id="55-cek-json-setelah-edit">5.5 Cek JSON Setelah Edit</h3>
+<p>Setelah edit <code>projects.json</code>, cek apakah JSON valid:</p>
+<pre><code class="language-bash">jq empty projects.json
+</code></pre>
+<p>Kalau tidak ada output error, berarti format JSON aman.</p>
+<hr />
+<h2 id="6-setup-project-hrm-apps-secara-manual">6. Setup Project HRM Apps Secara Manual</h2>
+<p>Lokasi app:</p>
+<pre><code class="language-bash">cd ~/Projects/HashMicro/HrmApp
+</code></pre>
+<h3 id="61-pastikan-tidak-ada-perubahan-yang-belum-disimpan">6.1 Pastikan Tidak Ada Perubahan yang Belum Disimpan</h3>
+<pre><code class="language-bash">git status
+</code></pre>
+<p>Kalau ada file berubah, jangan lanjut sebelum dipastikan boleh commit/stash.</p>
+<h3 id="62-pilih-branch-dasar-berdasarkan-region">6.2 Pilih Branch Dasar Berdasarkan Region</h3>
+<p>Umumnya:</p>
+<ul>
+<li>Indonesia: <code>Stable-Version</code></li>
+<li>Singapore: <code>Stable-SG</code></li>
+<li>Philippines: <code>Stable-PH</code></li>
+<li>Malaysia: <code>Stable-MY</code></li>
+</ul>
+<p>Contoh untuk Indonesia:</p>
+<pre><code class="language-bash">git checkout Stable-Version
+git pull origin Stable-Version
+</code></pre>
+<h3 id="63-buat-branch-client-baru">6.3 Buat Branch Client Baru</h3>
+<p>Contoh project key <code>clientbaru</code>:</p>
+<pre><code class="language-bash">git checkout -b clientbaru
+</code></pre>
+<p>Kalau branch sudah ada:</p>
+<pre><code class="language-bash">git checkout clientbaru
+git pull origin clientbaru
+</code></pre>
+<h3 id="64-update-file-env">6.4 Update File <code>.env</code></h3>
+<p>Buka file <code>.env</code>. Jika belum ada, copy dari <code>.env.example</code> jika tersedia.</p>
+<p>Isi/update data seperti ini:</p>
+<pre><code class="language-env">APP_NAME=&quot;Client Baru HRIS&quot;
+ANDROID_ID=&quot;com.hashmicro.eva.clientbaru&quot;
+IOS_ID=&quot;com.hashmicro.eva.clientbaru&quot;
+FIREBASE_PROJECT_ID=&quot;nama-firebase-project&quot;
+BASE_URL=&quot;https://client.hashmicro.co&quot;
+DEFAULT_DB=&quot;nama_database&quot;
+</code></pre>
+<p>Catatan:</p>
+<ul>
+<li>Jangan asal mengganti Firebase Project jika belum jelas.</li>
+<li>Pastikan Base URL bisa dibuka/dipakai.</li>
+<li>Pastikan database benar.</li>
+</ul>
+<h3 id="65-update-android-package-id">6.5 Update Android Package ID</h3>
+<p>Cari di file Android, biasanya:</p>
+<ul>
+<li><code>android/app/build.gradle</code></li>
+<li>atau <code>android/app/build.gradle.kts</code></li>
+</ul>
+<p>Ganti <code>applicationId</code> menjadi:</p>
+<pre><code class="language-text">com.hashmicro.eva.clientbaru
+</code></pre>
+<p>Jika ada <code>namespace</code>, samakan juga.</p>
+<p>Cek juga MainActivity:</p>
+<ul>
+<li><code>android/app/src/main/.../MainActivity.kt</code></li>
+<li>atau <code>MainActivity.java</code></li>
+</ul>
+<p>Pastikan baris <code>package ...</code> mengikuti package ID baru.</p>
+<h3 id="66-update-ios-bundle-id">6.6 Update iOS Bundle ID</h3>
+<p>Buka Xcode:</p>
+<pre><code class="language-bash">open ios/Runner.xcworkspace
+</code></pre>
+<p>Di Xcode:</p>
+<ol>
+<li>Klik project <code>Runner</code>.</li>
+<li>Pilih target <code>Runner</code>.</li>
+<li>Buka tab <strong>Signing &amp; Capabilities</strong>.</li>
+<li>Ubah <strong>Bundle Identifier</strong> menjadi:
+   - <code>com.hashmicro.eva.clientbaru</code></li>
+<li>Pilih Team Apple Developer yang benar.</li>
+<li>Pastikan signing tidak error.</li>
+</ol>
+<h3 id="67-update-nama-aplikasi">6.7 Update Nama Aplikasi</h3>
+<p>Android:</p>
+<ul>
+<li>Cek <code>android/app/src/main/AndroidManifest.xml</code>.</li>
+<li>Ubah <code>android:label</code> menjadi nama app, contoh:</li>
+<li><code>Client Baru HRIS</code></li>
+</ul>
+<p>IOS:</p>
+<ul>
+<li>Cek <code>ios/Runner/Info.plist</code>.</li>
+<li>Ubah:</li>
+<li><code>CFBundleDisplayName</code></li>
+<li><code>CFBundleName</code></li>
+</ul>
+<p>Menjadi nama app yang benar.</p>
+<h3 id="68-setup-firebase">6.8 Setup Firebase</h3>
+<p>Jika memakai Firebase:</p>
+<pre><code class="language-bash">flutterfire configure
+</code></pre>
+<p>Pilih Firebase project yang benar.</p>
+<p>Pastikan output membuat/mengupdate:</p>
+<pre><code class="language-text">lib/firebase_options.dart
+</code></pre>
+<h3 id="69-install-dependency">6.9 Install Dependency</h3>
+<pre><code class="language-bash">flutter clean
+flutter pub get
+cd ios
+pod install
+cd ..
+</code></pre>
+<h3 id="610-cek-build-dasar">6.10 Cek Build Dasar</h3>
+<p>Android:</p>
+<pre><code class="language-bash">flutter build apk --release
+</code></pre>
+<p>IOS:</p>
+<pre><code class="language-bash">flutter build ipa --release
+</code></pre>
+<p>Jika build berhasil, lanjut ke pembuatan app di Play Console dan App Store Connect.</p>
+<hr />
+<h2 id="7-setup-project-approval-apps-secara-manual">7. Setup Project Approval Apps Secara Manual</h2>
+<p>Lokasi app:</p>
+<pre><code class="language-bash">cd ~/Projects/HashMicro/ApprovalApp
+</code></pre>
+<h3 id="71-pastikan-tidak-ada-perubahan-yang-belum-disimpan">7.1 Pastikan Tidak Ada Perubahan yang Belum Disimpan</h3>
+<pre><code class="language-bash">git status
+</code></pre>
+<p>Kalau ada file berubah, jangan lanjut sebelum dipastikan boleh commit/stash.</p>
+<h3 id="72-gunakan-branch-dasar">7.2 Gunakan Branch Dasar</h3>
+<p>Untuk Approval Apps, branch dasar umumnya:</p>
+<pre><code class="language-bash">development
+</code></pre>
+<p>Jalankan:</p>
+<pre><code class="language-bash">git checkout development
+git pull origin development
+</code></pre>
+<h3 id="73-buat-branch-client-baru">7.3 Buat Branch Client Baru</h3>
+<p>Contoh project key <code>clientbaru</code>:</p>
+<pre><code class="language-bash">git checkout -b clientbaru
+</code></pre>
+<p>Kalau branch sudah ada:</p>
+<pre><code class="language-bash">git checkout clientbaru
+git pull origin clientbaru
+</code></pre>
+<h3 id="74-update-file-env">7.4 Update File <code>.env</code></h3>
+<p>Isi/update data:</p>
+<pre><code class="language-env">APP_NAME=&quot;Client Baru Approval&quot;
+ANDROID_ID=&quot;com.hashmicro.approval.clientbaru&quot;
+IOS_ID=&quot;com.hashmicro.approval.clientbaru&quot;
+FIREBASE_PROJECT_ID=&quot;nama-firebase-project&quot;
+BASE_URL=&quot;https://client.hashmicro.co&quot;
+DEFAULT_DB=&quot;nama_database&quot;
+</code></pre>
+<p>Jika ada field lain seperti <code>PORT</code> atau <code>TARGET_RELEASE_DATE</code>, ikuti kebutuhan project.</p>
+<h3 id="75-update-android-package-id">7.5 Update Android Package ID</h3>
+<p>Di file Android:</p>
+<ul>
+<li><code>android/app/build.gradle</code></li>
+<li>atau <code>android/app/build.gradle.kts</code></li>
+</ul>
+<p>Ubah:</p>
+<pre><code class="language-text">applicationId
+namespace
+</code></pre>
+<p>Menjadi:</p>
+<pre><code class="language-text">com.hashmicro.approval.clientbaru
+</code></pre>
+<p>Update juga package di MainActivity jika ada.</p>
+<h3 id="76-update-ios-bundle-id">7.6 Update iOS Bundle ID</h3>
+<p>Buka Xcode:</p>
+<pre><code class="language-bash">open ios/Runner.xcworkspace
+</code></pre>
+<p>Di Xcode:</p>
+<ol>
+<li>Klik project <code>Runner</code>.</li>
+<li>Pilih target <code>Runner</code>.</li>
+<li>Buka <strong>Signing &amp; Capabilities</strong>.</li>
+<li>Ubah <strong>Bundle Identifier</strong> menjadi:
+   - <code>com.hashmicro.approval.clientbaru</code></li>
+<li>Pilih Team Apple Developer yang benar.</li>
+<li>Pastikan signing tidak error.</li>
+</ol>
+<h3 id="77-update-nama-aplikasi">7.7 Update Nama Aplikasi</h3>
+<p>Android:</p>
+<ul>
+<li>Update <code>android:label</code> di <code>AndroidManifest.xml</code>.</li>
+</ul>
+<p>IOS:</p>
+<ul>
+<li>Update <code>CFBundleDisplayName</code> dan <code>CFBundleName</code> di <code>Info.plist</code>.</li>
+</ul>
+<p>Contoh nama:</p>
+<pre><code class="language-text">Client Baru Approval
+</code></pre>
+<h3 id="78-setup-firebase">7.8 Setup Firebase</h3>
+<pre><code class="language-bash">flutterfire configure
+</code></pre>
+<p>Pilih Firebase project yang benar.</p>
+<h3 id="79-install-dependency">7.9 Install Dependency</h3>
+<pre><code class="language-bash">flutter clean
+flutter pub get
+cd ios
+pod install
+cd ..
+</code></pre>
+<h3 id="710-cek-build-dasar">7.10 Cek Build Dasar</h3>
+<p>Android:</p>
+<pre><code class="language-bash">flutter build apk --release
+</code></pre>
+<p>IOS:</p>
+<pre><code class="language-bash">flutter build ipa --release
+</code></pre>
+<hr />
+<h2 id="8-membuat-app-baru-di-google-play-console">8. Membuat App Baru di Google Play Console</h2>
+<p>Bagian ini untuk Android.</p>
+<h3 id="81-masuk-ke-play-console">8.1 Masuk ke Play Console</h3>
+<ol>
+<li>Buka https://play.google.com/console</li>
+<li>Login dengan akun Google yang punya akses.</li>
+<li>Klik <strong>Create app</strong>.</li>
+</ol>
+<h3 id="82-isi-detail-app">8.2 Isi Detail App</h3>
+<p>Isi form:</p>
+<ul>
+<li><strong>App name</strong>:</li>
+<li>HRM: <code>Client Baru HRIS</code></li>
+<li>
+<p>Approval: <code>Client Baru Approval</code></p>
+</li>
+<li>
+<p><strong>Default language</strong>:</p>
+</li>
+<li>
+<p>Biasanya <code>English (United States)</code> atau sesuai kebutuhan.</p>
+</li>
+<li>
+<p><strong>App or game</strong>:</p>
+</li>
+<li>
+<p>Pilih <code>App</code>.</p>
+</li>
+<li>
+<p><strong>Free or paid</strong>:</p>
+</li>
+<li>
+<p>Biasanya <code>Free</code>.</p>
+</li>
+<li>
+<p>Centang declaration yang diminta.</p>
+</li>
+</ul>
+<p>Klik <strong>Create app</strong>.</p>
+<h3 id="83-lengkapi-app-content">8.3 Lengkapi App Content</h3>
+<p>Di sidebar Play Console, lengkapi bagian-bagian yang wajib. Nama menu bisa berubah mengikuti tampilan Google, tapi umumnya meliputi:</p>
+<ol>
+<li>
+<p><strong>Privacy Policy</strong>
+   - Isi URL privacy policy.</p>
+</li>
+<li>
+<p><strong>App access</strong>
+   - Jelaskan apakah app butuh login.
+   - Jika butuh login, sediakan credential demo/reviewer sesuai kebijakan internal.</p>
+</li>
+<li>
+<p><strong>Ads</strong>
+   - Biasanya pilih tidak ada ads jika memang tidak ada.</p>
+</li>
+<li>
+<p><strong>Content rating</strong>
+   - Isi questionnaire.</p>
+</li>
+<li>
+<p><strong>Target audience and content</strong>
+   - Pilih target audience sesuai app business/internal.</p>
+</li>
+<li>
+<p><strong>Data safety</strong>
+   - Isi data yang dikumpulkan/diproses app.</p>
+</li>
+<li>
+<p><strong>Government apps</strong> jika muncul
+   - Pilih sesuai kondisi app.</p>
+</li>
+<li>
+<p><strong>Financial features</strong> jika muncul
+   - Pilih sesuai kondisi app.</p>
+</li>
+<li>
+<p><strong>Health apps</strong> jika muncul
+   - Pilih sesuai kondisi app.</p>
+</li>
+</ol>
+<p>Penting:</p>
+<ul>
+<li>Jangan asal centang.</li>
+<li>Jika ragu, tanya PIC/lead karena jawaban mempengaruhi review Google.</li>
+</ul>
+<h3 id="84-lengkapi-store-listing">8.4 Lengkapi Store Listing</h3>
+<p>Masuk ke menu <strong>Store presence</strong> atau <strong>Main store listing</strong>.</p>
+<p>Isi:</p>
+<ul>
+<li>App name.</li>
+<li>Short description.</li>
+<li>Full description.</li>
+<li>App icon.</li>
+<li>Feature graphic.</li>
+<li>Phone screenshots.</li>
+<li>Tablet screenshots jika wajib.</li>
+<li>Category.</li>
+<li>Contact email.</li>
+<li>Privacy policy URL.</li>
+</ul>
+<p>Untuk HRM Apps, deskripsi harus menjelaskan aplikasi HR/internal company.</p>
+<p>Untuk Approval Apps, deskripsi harus menjelaskan aplikasi approval/request internal company.</p>
+<h3 id="85-upload-aab-pertama">8.5 Upload AAB Pertama</h3>
+<p>Sebelum upload, build AAB dari project Flutter:</p>
+<pre><code class="language-bash">flutter build appbundle --release
+</code></pre>
+<p>File biasanya berada di:</p>
+<pre><code class="language-text">build/app/outputs/bundle/release/app-release.aab
+</code></pre>
+<p>Di Play Console:</p>
+<ol>
+<li>Masuk ke <strong>Testing</strong> atau <strong>Production</strong> sesuai kebutuhan.</li>
+<li>Pilih track, misalnya:
+   - Internal testing untuk test awal.
+   - Closed testing jika butuh tester tertentu.
+   - Production jika sudah siap release publik/terbatas.</li>
+<li>Klik <strong>Create new release</strong>.</li>
+<li>Upload file <code>.aab</code>.</li>
+<li>Isi release notes.</li>
+<li>Save.</li>
+<li>Review release.</li>
+<li>Submit/send for review jika sudah yakin.</li>
+</ol>
+<h3 id="86-simpan-dashboardapp-id-ke-release-hub">8.6 Simpan Dashboard/App ID ke Release Hub</h3>
+<p>Setelah app dibuat, ambil ID Play Console dari URL dashboard.</p>
+<p>Contoh URL biasanya mengandung angka panjang seperti:</p>
+<pre><code class="language-text">497xxxxxxxxxxxxxxx
+</code></pre>
+<p>Masukkan ke <code>projects.json</code> bagian:</p>
+<pre><code class="language-json">&quot;Play Console Dashboard&quot;: {
+  &quot;HRM Apps&quot;: &quot;ID_DARI_PLAY_CONSOLE&quot;,
+  &quot;Approval Apps&quot;: &quot;ID_DARI_PLAY_CONSOLE&quot;
+}
+</code></pre>
+<p>Jika hanya HRM, isi HRM saja. Jika hanya Approval, isi Approval saja.</p>
+<hr />
+<h2 id="9-membuat-app-baru-di-apple-developer-dan-app-store-connect">9. Membuat App Baru di Apple Developer dan App Store Connect</h2>
+<p>Bagian ini untuk iOS.</p>
+<p>Ada 2 tempat yang perlu dipahami:</p>
+<ol>
+<li>
+<p><strong>Apple Developer</strong>
+   - Untuk membuat Bundle ID / Identifier.</p>
+</li>
+<li>
+<p><strong>App Store Connect</strong>
+   - Untuk membuat halaman app, TestFlight, dan submit review.</p>
+</li>
+</ol>
+<h3 id="91-buat-bundle-id-di-apple-developer">9.1 Buat Bundle ID di Apple Developer</h3>
+<ol>
+<li>Buka https://developer.apple.com/account</li>
+<li>Masuk ke <strong>Certificates, Identifiers &amp; Profiles</strong>.</li>
+<li>Pilih <strong>Identifiers</strong>.</li>
+<li>Klik tombol <code>+</code>.</li>
+<li>Pilih <strong>App IDs</strong>.</li>
+<li>Pilih <strong>App</strong>.</li>
+<li>Isi:
+   - Description: nama app, contoh <code>Client Baru HRIS</code>.
+   - Bundle ID: pilih <strong>Explicit</strong>.
+   - Bundle ID value:<ul>
+<li>HRM: <code>com.hashmicro.eva.clientbaru</code></li>
+<li>Approval: <code>com.hashmicro.approval.clientbaru</code></li>
+</ul>
+</li>
+<li>Pilih capability yang dibutuhkan app.</li>
+<li>Klik Continue/Register.</li>
+</ol>
+<p>Capability umum tergantung app, misalnya:</p>
+<ul>
+<li>Push Notifications jika app memakai notification.</li>
+<li>Associated Domains jika app memakai universal link.</li>
+<li>Sign in with Apple jika app memakai fitur tersebut.</li>
+</ul>
+<p>Jangan aktifkan capability yang tidak dipakai.</p>
+<h3 id="92-buat-app-baru-di-app-store-connect">9.2 Buat App Baru di App Store Connect</h3>
+<ol>
+<li>Buka https://appstoreconnect.apple.com</li>
+<li>Masuk ke <strong>My Apps</strong>.</li>
+<li>Klik tombol <code>+</code>.</li>
+<li>Pilih <strong>New App</strong>.</li>
+<li>Isi:
+   - Platform: <code>iOS</code>
+   - Name:<ul>
+<li>HRM: <code>Client Baru HRIS</code></li>
+<li>Approval: <code>Client Baru Approval</code></li>
+<li>Primary language: sesuai kebutuhan, biasanya English.</li>
+<li>Bundle ID: pilih Bundle ID yang sudah dibuat.</li>
+<li>SKU: isi kode unik, biasanya sama dengan project key atau bundle id.</li>
+<li>User Access: Full Access atau sesuai kebutuhan.</li>
+</ul>
+</li>
+<li>Klik <strong>Create</strong>.</li>
+</ol>
+<h3 id="93-lengkapi-informasi-app-store">9.3 Lengkapi Informasi App Store</h3>
+<p>Di App Store Connect, lengkapi:</p>
+<ol>
+<li>
+<p><strong>App Information</strong>
+   - Name.
+   - Subtitle jika diperlukan.
+   - Category.
+   - Content Rights.
+   - Age Rating.</p>
+</li>
+<li>
+<p><strong>Pricing and Availability</strong>
+   - Pilih harga/free.
+   - Pilih negara availability.</p>
+</li>
+<li>
+<p><strong>App Privacy</strong>
+   - Isi data privacy sesuai data yang dikumpulkan app.</p>
+</li>
+<li>
+<p><strong>Version Information</strong>
+   - Screenshots.
+   - Description.
+   - Keywords.
+   - Support URL.
+   - Marketing URL jika ada.
+   - Copyright.</p>
+</li>
+<li>
+<p><strong>App Review Information</strong>
+   - Contact information.
+   - Notes untuk reviewer.
+   - Credential demo jika app butuh login.</p>
+</li>
+</ol>
+<p>Penting:</p>
+<ul>
+<li>Untuk aplikasi internal/client, jelaskan bahwa app digunakan oleh company/client untuk kebutuhan internal.</li>
+<li>Pastikan reviewer bisa login atau memahami cara akses app.</li>
+</ul>
+<hr />
+<h2 id="10-upload-build-ke-testflight">10. Upload Build ke TestFlight</h2>
+<p>TestFlight dipakai untuk testing iOS sebelum masuk App Store review.</p>
+<h3 id="101-pastikan-version-dan-build-number-naik">10.1 Pastikan Version dan Build Number Naik</h3>
+<p>Di Flutter, version ada di <code>pubspec.yaml</code>:</p>
+<pre><code class="language-yaml">version: 1.0.0+1
+</code></pre>
+<p>Format:</p>
+<pre><code class="language-text">version_name+build_number
+</code></pre>
+<p>Contoh:</p>
+<pre><code class="language-text">1.0.1+2
+</code></pre>
+<p>Setiap upload ke TestFlight harus punya build number yang lebih tinggi dari sebelumnya.</p>
+<h3 id="102-build-ipa">10.2 Build IPA</h3>
+<p>Dari folder app:</p>
+<pre><code class="language-bash">flutter clean
+flutter pub get
+cd ios
+pod install
+cd ..
+flutter build ipa --release
+</code></pre>
+<p>File IPA biasanya ada di:</p>
+<pre><code class="language-text">build/ios/ipa/*.ipa
+</code></pre>
+<h3 id="103-upload-ipa-ke-app-store-connect">10.3 Upload IPA ke App Store Connect</h3>
+<p>Ada beberapa cara upload:</p>
+<h4 id="cara-a-transporter-app">Cara A: Transporter App</h4>
+<p>Ini paling mudah untuk non-teknis.</p>
+<ol>
+<li>Install <strong>Transporter</strong> dari Mac App Store.</li>
+<li>Buka Transporter.</li>
+<li>Login memakai Apple ID developer.</li>
+<li>Drag file <code>.ipa</code> ke Transporter.</li>
+<li>Klik <strong>Deliver</strong>.</li>
+<li>Tunggu sampai upload selesai.</li>
+</ol>
+<h4 id="cara-b-xcode-organizer">Cara B: Xcode Organizer</h4>
+<ol>
+<li>Buka Xcode.</li>
+<li>Menu <strong>Window → Organizer</strong>.</li>
+<li>Pilih archive terbaru.</li>
+<li>Klik <strong>Distribute App</strong>.</li>
+<li>Pilih <strong>App Store Connect</strong>.</li>
+<li>Ikuti langkah upload.</li>
+</ol>
+<h3 id="104-tunggu-processing-build">10.4 Tunggu Processing Build</h3>
+<p>Setelah upload:</p>
+<ol>
+<li>Buka App Store Connect.</li>
+<li>Pilih app.</li>
+<li>Masuk ke tab <strong>TestFlight</strong>.</li>
+<li>Tunggu build muncul.</li>
+<li>Status awal biasanya <code>Processing</code>.</li>
+<li>Tunggu sampai build siap dipilih.</li>
+</ol>
+<p>Processing bisa memakan waktu beberapa menit sampai lebih lama.</p>
+<h3 id="105-isi-compliance-jika-diminta">10.5 Isi Compliance Jika Diminta</h3>
+<p>Kadang Apple meminta informasi export compliance/encryption.</p>
+<p>Jika muncul pertanyaan:</p>
+<ul>
+<li>Jawab sesuai kondisi app.</li>
+<li>Jika app hanya memakai HTTPS standar dan tidak memakai encryption custom, biasanya mengikuti pilihan standar internal tim.</li>
+<li>Jika ragu, tanyakan ke PIC/lead sebelum submit.</li>
+</ul>
+<h3 id="106-tambah-tester-internal">10.6 Tambah Tester Internal</h3>
+<ol>
+<li>Buka tab <strong>TestFlight</strong>.</li>
+<li>Pilih build.</li>
+<li>Tambahkan internal tester/group.</li>
+<li>Klik notify tester jika diperlukan.</li>
+</ol>
+<h3 id="107-external-testing-public-link">10.7 External Testing / Public Link</h3>
+<p>Jika butuh tester eksternal:</p>
+<ol>
+<li>Masuk ke <strong>TestFlight</strong>.</li>
+<li>Buat atau pilih group external tester.</li>
+<li>Tambahkan build ke group tersebut.</li>
+<li>Isi informasi beta review jika diminta.</li>
+<li>Submit untuk Beta App Review.</li>
+<li>Setelah approved, aktifkan public link jika dibutuhkan.</li>
+</ol>
+<p>Catatan:</p>
+<ul>
+<li>External TestFlight biasanya perlu review Apple terlebih dahulu.</li>
+<li>Public link baru bisa dipakai setelah external testing aktif/approved.</li>
+</ul>
+<hr />
+<h2 id="11-submit-ke-app-store-review">11. Submit ke App Store Review</h2>
+<p>Setelah build sudah ada dan app metadata lengkap:</p>
+<ol>
+<li>Buka App Store Connect.</li>
+<li>Pilih app.</li>
+<li>Buka versi app yang akan direlease.</li>
+<li>Pilih build dari TestFlight/build list.</li>
+<li>Pastikan semua metadata lengkap:
+   - Screenshot.
+   - Description.
+   - Privacy.
+   - Age rating.
+   - Review information.</li>
+<li>Klik <strong>Add for Review</strong> atau <strong>Submit for Review</strong>.</li>
+<li>Ikuti checklist Apple sampai submit berhasil.</li>
+</ol>
+<p>Jika rejected:</p>
+<ol>
+<li>Baca alasan reject di Resolution Center.</li>
+<li>Perbaiki app atau metadata.</li>
+<li>Upload build baru jika perlu.</li>
+<li>Submit ulang.</li>
+</ol>
+<hr />
+<h2 id="12-submit-ke-google-play-review">12. Submit ke Google Play Review</h2>
+<p>Setelah AAB diupload dan semua form Play Console lengkap:</p>
+<ol>
+<li>Buka app di Play Console.</li>
+<li>Masuk ke track release yang dipakai.</li>
+<li>Pastikan release sudah berisi AAB.</li>
+<li>Isi release notes.</li>
+<li>Klik <strong>Review release</strong>.</li>
+<li>Jika tidak ada error, klik submit/send for review.</li>
+</ol>
+<p>Jika rejected:</p>
+<ol>
+<li>Buka Policy Status atau Inbox Play Console.</li>
+<li>Baca alasan reject.</li>
+<li>Perbaiki app atau metadata.</li>
+<li>Upload AAB baru jika perlu.</li>
+<li>Submit ulang.</li>
+</ol>
+<hr />
+<h2 id="13-checklist-manual-release">13. Checklist Manual Release</h2>
+<p>Gunakan checklist ini agar tidak ada yang terlewat.</p>
+<h3 id="data-project">Data Project</h3>
+<ul>
+<li>[ ] Nama client sudah benar.</li>
+<li>[ ] Project key sudah benar.</li>
+<li>[ ] Region sudah benar.</li>
+<li>[ ] Base URL sudah benar.</li>
+<li>[ ] Database sudah benar.</li>
+<li>[ ] Icon sudah siap.</li>
+<li>[ ] Firebase project sudah jelas.</li>
+</ul>
+<h3 id="release-hub">Release Hub</h3>
+<ul>
+<li>[ ] Project sudah ditambahkan ke <code>projects.json</code>.</li>
+<li>[ ] <code>Type</code> sudah benar: HRM, Approval, atau keduanya.</li>
+<li>[ ] App name HRM sudah benar.</li>
+<li>[ ] App name Approval sudah benar.</li>
+<li>[ ] Package ID sudah benar.</li>
+<li>[ ] Bundle ID sudah benar.</li>
+<li>[ ] <code>jq empty projects.json</code> tidak error.</li>
+</ul>
+<h3 id="hrm-apps">HRM Apps</h3>
+<ul>
+<li>[ ] Branch client sudah dibuat.</li>
+<li>[ ] <code>.env</code> sudah diupdate.</li>
+<li>[ ] Android Package ID sudah diganti.</li>
+<li>[ ] iOS Bundle ID sudah diganti.</li>
+<li>[ ] Nama app sudah diganti.</li>
+<li>[ ] Firebase sudah dikonfigurasi jika diperlukan.</li>
+<li>[ ] <code>flutter pub get</code> berhasil.</li>
+<li>[ ] <code>pod install</code> berhasil.</li>
+<li>[ ] APK/AAB berhasil dibuild.</li>
+<li>[ ] IPA berhasil dibuild.</li>
+</ul>
+<h3 id="approval-apps">Approval Apps</h3>
+<ul>
+<li>[ ] Branch client sudah dibuat.</li>
+<li>[ ] <code>.env</code> sudah diupdate.</li>
+<li>[ ] Android Package ID sudah diganti.</li>
+<li>[ ] iOS Bundle ID sudah diganti.</li>
+<li>[ ] Nama app sudah diganti.</li>
+<li>[ ] Firebase sudah dikonfigurasi jika diperlukan.</li>
+<li>[ ] <code>flutter pub get</code> berhasil.</li>
+<li>[ ] <code>pod install</code> berhasil.</li>
+<li>[ ] APK/AAB berhasil dibuild.</li>
+<li>[ ] IPA berhasil dibuild.</li>
+</ul>
+<h3 id="google-play-console">Google Play Console</h3>
+<ul>
+<li>[ ] App baru sudah dibuat.</li>
+<li>[ ] App name benar.</li>
+<li>[ ] Package ID benar.</li>
+<li>[ ] App content lengkap.</li>
+<li>[ ] Store listing lengkap.</li>
+<li>[ ] Privacy policy benar.</li>
+<li>[ ] AAB berhasil diupload.</li>
+<li>[ ] Release notes diisi.</li>
+<li>[ ] Submit review berhasil.</li>
+<li>[ ] Dashboard ID disimpan ke <code>projects.json</code>.</li>
+</ul>
+<h3 id="apple-developer-app-store-connect">Apple Developer / App Store Connect</h3>
+<ul>
+<li>[ ] Bundle ID dibuat di Apple Developer.</li>
+<li>[ ] Capability sesuai kebutuhan.</li>
+<li>[ ] App baru dibuat di App Store Connect.</li>
+<li>[ ] Bundle ID yang dipilih benar.</li>
+<li>[ ] SKU unik.</li>
+<li>[ ] App information lengkap.</li>
+<li>[ ] Pricing and availability lengkap.</li>
+<li>[ ] App privacy lengkap.</li>
+<li>[ ] Screenshot dan metadata lengkap.</li>
+<li>[ ] Build IPA berhasil diupload.</li>
+<li>[ ] Build muncul di TestFlight.</li>
+<li>[ ] Internal tester ditambahkan jika perlu.</li>
+<li>[ ] External testing/public link dibuat jika perlu.</li>
+<li>[ ] Submit App Store Review berhasil.</li>
+</ul>
+<hr />
+<h2 id="14-urutan-kerja-yang-disarankan">14. Urutan Kerja yang Disarankan</h2>
+<p>Untuk project baru yang punya HRM Apps dan Approval Apps, urutan paling aman:</p>
+<ol>
+<li>Kumpulkan data client.</li>
+<li>Tambahkan data ke <code>projects.json</code> di Release Hub.</li>
+<li>Buat/setup branch HRM Apps.</li>
+<li>Build HRM APK/AAB dan IPA untuk memastikan tidak error.</li>
+<li>Buat/setup branch Approval Apps.</li>
+<li>Build Approval APK/AAB dan IPA untuk memastikan tidak error.</li>
+<li>Buat app HRM di Google Play Console.</li>
+<li>Buat app Approval di Google Play Console.</li>
+<li>Buat Bundle ID HRM di Apple Developer.</li>
+<li>Buat Bundle ID Approval di Apple Developer.</li>
+<li>Buat app HRM di App Store Connect.</li>
+<li>Buat app Approval di App Store Connect.</li>
+<li>Upload AAB HRM ke Play Console.</li>
+<li>Upload AAB Approval ke Play Console.</li>
+<li>Upload IPA HRM ke TestFlight.</li>
+<li>Upload IPA Approval ke TestFlight.</li>
+<li>Lengkapi metadata Google dan Apple.</li>
+<li>Submit review Google Play.</li>
+<li>Submit Beta App Review/TestFlight external jika perlu.</li>
+<li>Submit App Store Review jika app siap production.</li>
+</ol>
+<hr />
+<h2 id="15-kesalahan-yang-sering-terjadi">15. Kesalahan yang Sering Terjadi</h2>
+<h3 id="151-package-id-atau-bundle-id-salah">15.1 Package ID atau Bundle ID Salah</h3>
+<p>Dampak:</p>
+<ul>
+<li>Play Console menolak AAB.</li>
+<li>App Store Connect tidak menemukan app yang cocok.</li>
+<li>Firebase config salah.</li>
+</ul>
+<p>Solusi:</p>
+<ul>
+<li>Cocokkan ID di <code>projects.json</code>, Android, Xcode, Firebase, Play Console, dan Apple Developer.</li>
+</ul>
+<h3 id="152-build-number-tidak-naik">15.2 Build Number Tidak Naik</h3>
+<p>Dampak:</p>
+<ul>
+<li>TestFlight menolak upload.</li>
+<li>Play Console menolak artifact.</li>
+</ul>
+<p>Solusi:</p>
+<ul>
+<li>Naikkan build number di <code>pubspec.yaml</code>.</li>
+</ul>
+<p>Contoh:</p>
+<pre><code class="language-yaml">version: 1.0.1+3
+</code></pre>
+<h3 id="153-signing-ios-error">15.3 Signing iOS Error</h3>
+<p>Dampak:</p>
+<ul>
+<li>IPA gagal build.</li>
+</ul>
+<p>Solusi:</p>
+<ul>
+<li>Cek Xcode Signing &amp; Capabilities.</li>
+<li>Pastikan Team benar.</li>
+<li>Pastikan Bundle ID sudah dibuat.</li>
+<li>Pastikan certificate/provisioning profile tersedia.</li>
+</ul>
+<h3 id="154-app-content-google-belum-lengkap">15.4 App Content Google Belum Lengkap</h3>
+<p>Dampak:</p>
+<ul>
+<li>Tidak bisa submit review di Play Console.</li>
+</ul>
+<p>Solusi:</p>
+<ul>
+<li>Selesaikan semua menu wajib di Play Console sampai tidak ada warning blocking.</li>
+</ul>
+<h3 id="155-metadata-kurang-lengkap-di-app-store-connect">15.5 Metadata Kurang Lengkap di App Store Connect</h3>
+<p>Dampak:</p>
+<ul>
+<li>Tidak bisa submit App Store Review.</li>
+</ul>
+<p>Solusi:</p>
+<ul>
+<li>Lengkapi screenshot, privacy, age rating, review info, dan build.</li>
+</ul>
+<hr />
+<h2 id="16-catatan-penting-untuk-non-teknis">16. Catatan Penting untuk Non-Teknis</h2>
+<ul>
+<li>Jangan mengubah Package ID/Bundle ID setelah app sudah dibuat, kecuali benar-benar tahu dampaknya.</li>
+<li>Satu Package ID/Bundle ID hanya untuk satu app.</li>
+<li>Nama app boleh mirip, tapi Package ID/Bundle ID harus unik.</li>
+<li>Untuk setiap upload baru, build number harus naik.</li>
+<li>Jika ada error saat submit, baca pesan error pelan-pelan. Biasanya pesan error menunjukkan field mana yang belum lengkap.</li>
+<li>Jika diminta credential reviewer, jangan kirim password sembarangan di dokumen publik. Ikuti prosedur internal tim.</li>
+<li>Jangan submit production jika belum ada approval dari PIC/lead.</li>
+</ul>
+<hr />
+<h2 id="17-kapan-perlu-minta-bantuan-teknis">17. Kapan Perlu Minta Bantuan Teknis</h2>
+<p>Minta bantuan developer/lead jika:</p>
+<ul>
+<li><code>flutter doctor</code> masih error.</li>
+<li>Android build gagal.</li>
+<li>iOS build gagal.</li>
+<li>Pod install gagal.</li>
+<li>Signing Xcode error.</li>
+<li>Firebase project tidak ditemukan.</li>
+<li>Play Console menolak package name.</li>
+<li>App Store Connect tidak menemukan Bundle ID.</li>
+<li>App review ditolak dan alasannya butuh perubahan kode.</li>
+</ul>
+<hr />
+<h2 id="18-ringkasan-super-singkat">18. Ringkasan Super Singkat</h2>
+<p>Jika disingkat, flow manualnya adalah:</p>
+<ol>
+<li>Setup laptop: Flutter, Xcode, Android Studio, CocoaPods.</li>
+<li>Siapkan data client.</li>
+<li>Tambahkan data client ke <code>projects.json</code> di Release Hub.</li>
+<li>Setup branch HRM/Approval Apps.</li>
+<li>Ganti app name, package ID, bundle ID, base URL, database, Firebase.</li>
+<li>Build APK/AAB untuk Android.</li>
+<li>Build IPA untuk iOS.</li>
+<li>Buat app baru di Play Console.</li>
+<li>Buat Bundle ID dan app baru di App Store Connect.</li>
+<li>Upload AAB ke Play Console.</li>
+<li>Upload IPA ke TestFlight.</li>
+<li>Lengkapi metadata.</li>
+<li>Submit review Google dan Apple.</li>
+</ol>
+</body>
+</html>
