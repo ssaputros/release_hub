@@ -1,0 +1,1 @@
+Era Budi CRM is an application used to create and manage prospects or leads for each salesman. This includes lead creation, scheduling activities and meetings, creating quotations, calculating targets, viewing customer data, and also being able to see product data and inventory in the warehouse.

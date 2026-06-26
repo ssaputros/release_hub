@@ -537,5 +537,62 @@
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.perumdatuahsekata"
     }
+  },
+  "prointegrated": {
+    "Project": {
+      "Project Name": "Pro Integragted",
+      "App Name": {
+        "CRM Apps": "Pro Integrated by Hashmicro"
+      },
+      "Type": "CRM Apps",
+      "Icon": "https://drive.google.com/open?id=1ZdzHfbcEcP0fmYo6LarmzY-9Hn5bf1EN"
+    },
+    "Bundle ID": {
+      "CRM Apps": "com.hashmicro3.crm.prointegrated"
+    },
+    "Package ID": {
+      "CRM Apps": "com.hashmicro3.crm.prointegrated"
+    },
+    "Play Console Dashboard": {
+      "CRM Apps": "4972529355734282956"
+    }
+  },
+  "io3": {
+    "Project": {
+      "Project Name": "io3",
+      "App Name": {
+        "CRM Apps": "io3 ERP Apps by Hashmicro"
+      },
+      "Type": "CRM Apps",
+      "Icon": "https://drive.google.com/open?id=1gY1Lx1eZd4IpPXsVtH7EBSWWEkaOS6H_"
+    },
+    "Bundle ID": {
+      "CRM Apps": "com.hashmicro3.crm.io3"
+    },
+    "Package ID": {
+      "CRM Apps": "com.hashmicro3.crm.io3"
+    },
+    "Play Console Dashboard": {
+      "CRM Apps": "4974751319701923107"
+    }
+  },
+  "ptangkasakharismasukses": {
+    "Project": {
+      "Project Name": "PT. Angkasa Kharisma Sukses",
+      "App Name": {
+        "CRM Apps": "CRM AKS by Hashmicro"
+      },
+      "Type": "CRM Apps",
+      "Icon": ""
+    },
+    "Bundle ID": {
+      "CRM Apps": "com.hashmicro.crm.ptangkasakharismasukses"
+    },
+    "Package ID": {
+      "CRM Apps": "com.hashmicro.crm.ptangkasakharismasukses"
+    },
+    "Play Console Dashboard": {
+      "CRM Apps": "4975772429694271291"
+    }
   }
 }
