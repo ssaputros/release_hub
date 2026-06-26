@@ -34,6 +34,9 @@ projects = JSON.parse(File.read(projects_path))
 run_id = ARGV[0]
 app_type = ARGV[1]
 
+manual_package_id = nil
+manual_template_type = nil
+
 if run_id.nil? || run_id.empty?
   puts "============================================================"
   puts "🤖 PILIH PROJECT UNTUK DOWNLOAD PLAY STORE METADATA"
@@ -43,6 +46,7 @@ if run_id.nil? || run_id.empty?
   available_projects.each_with_index do |key, idx|
     puts "#{idx + 1}) #{key} (#{projects[key]['Project']['Project Name']})"
   end
+  puts "M) Input Package ID Manual"
   puts "0) Keluar"
   puts "------------------------------------------------------------"
   print "Pilihan Anda: "
@@ -51,92 +55,132 @@ if run_id.nil? || run_id.empty?
   if choice == '0' || choice.empty?
     puts "Batal."
     exit 0
-  end
-  
-  choice_idx = choice.to_i - 1
-  if choice_idx >= 0 && choice_idx < available_projects.length
-    run_id = available_projects[choice_idx]
-  else
-    puts "❌ Pilihan tidak valid."
-    exit 1
-  end
-end
-
-app_data = projects[run_id]
-unless app_data
-  puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
-  exit 1
-end
-
-# Check types
-project_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
-if project_types.empty?
-  puts "❌ Error: Project ini tidak memiliki tipe yang didefinisikan."
-  exit 1
-end
-
-if app_type.nil? || app_type.empty?
-  if project_types.length > 1
+  elsif choice.downcase == 'm'
     puts "\n============================================================"
-    puts "🗂️ PILIH TIPE APLIKASI UNTUK #{app_data['Project']['Project Name']}"
+    puts "🔑 INPUT PACKAGE ID MANUAL"
     puts "============================================================"
-    project_types.each_with_index do |t, idx|
-      puts "#{idx + 1}) #{t}"
-    end
-    puts "0) Keluar"
-    puts "------------------------------------------------------------"
-    print "Pilihan Anda: "
-    type_choice = $stdin.gets.chomp.strip
-    
-    if type_choice == '0' || type_choice.empty?
-      puts "Batal."
-      exit 0
+    print "Masukkan Package ID Aplikasi (misal: com.domain.app): "
+    manual_package_id = $stdin.gets.chomp.strip
+    if manual_package_id.empty?
+      puts "❌ Package ID tidak boleh kosong."
+      exit 1
     end
     
-    type_idx = type_choice.to_i - 1
-    if type_idx >= 0 && type_idx < project_types.length
-      app_type = project_types[type_idx]
+    print "Save as template type (misal: HRM Apps, Approval Apps): "
+    manual_template_type = $stdin.gets.chomp.strip
+    if manual_template_type.empty?
+      puts "❌ Tipe template tidak boleh kosong."
+      exit 1
+    end
+  else
+    choice_idx = choice.to_i - 1
+    if choice_idx >= 0 && choice_idx < available_projects.length
+      run_id = available_projects[choice_idx]
     else
       puts "❌ Pilihan tidak valid."
       exit 1
     end
-  else
-    app_type = project_types.first
   end
 end
 
-# Resolve package name from projects.json
-default_package_name = app_data['Package ID'][app_type]
+if manual_package_id
+  package_name = manual_package_id
+  app_type = manual_template_type
+  folder_type = manual_template_type == "HRM Apps" ? "Hrm Apps" : manual_template_type
+  metadata_root = File.join(project_root, "store_listings", folder_type)
+  metadata_android_path = File.join(metadata_root, "android")
+  FileUtils.mkdir_p(metadata_android_path) unless File.directory?(metadata_android_path)
 
-# Input Package Name
-puts "\n============================================================"
-puts "🔑 INPUT PACKAGE NAME"
-puts "============================================================"
-print "Masukkan Package Name Aplikasi (Default: #{default_package_name}): "
-input_package_name = $stdin.gets.chomp.strip
-package_name = input_package_name.empty? ? default_package_name : input_package_name
+  # Clean existing directory to prevent Supply setup from skipping download
+  if File.exist?(metadata_android_path)
+    puts "🧹 Membersihkan direktori metadata lokal lama di #{metadata_android_path}..."
+    FileUtils.rm_rf(metadata_android_path)
+  end
 
-# Normalize directory type name (HRM Apps -> Hrm Apps)
-folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+  puts "\n============================================================"
+  puts "ℹ️ TARGET DOWNLOAD PLAY STORE METADATA"
+  puts "============================================================"
+  puts "Package ID     : #{package_name}"
+  puts "Template Type  : #{manual_template_type}"
+  puts "Metadata Path  : #{metadata_android_path}"
+  puts "============================================================\n"
+else
+  app_data = projects[run_id]
+  unless app_data
+    puts "❌ Error: Project dengan ID '#{run_id}' tidak ditemukan di projects.json."
+    exit 1
+  end
 
-metadata_root = File.join(project_root, "store_listings", folder_type)
-metadata_android_path = File.join(metadata_root, "android")
+  # Check types
+  project_types = (app_data['Project']['Type'] || "").split(",").map(&:strip).reject(&:empty?)
+  if project_types.empty?
+    puts "❌ Error: Project ini tidak memiliki tipe yang didefinisikan."
+    exit 1
+  end
 
-# Clean existing directory to prevent Supply setup from skipping download
-if File.exist?(metadata_android_path)
-  puts "🧹 Membersihkan direktori metadata lokal lama di #{metadata_android_path}..."
-  FileUtils.rm_rf(metadata_android_path)
+  if app_type.nil? || app_type.empty?
+    if project_types.length > 1
+      puts "\n============================================================"
+      puts "🗂️ PILIH TIPE APLIKASI UNTUK #{app_data['Project']['Project Name']}"
+      puts "============================================================"
+      project_types.each_with_index do |t, idx|
+        puts "#{idx + 1}) #{t}"
+      end
+      puts "0) Keluar"
+      puts "------------------------------------------------------------"
+      print "Pilihan Anda: "
+      type_choice = $stdin.gets.chomp.strip
+      
+      if type_choice == '0' || type_choice.empty?
+        puts "Batal."
+        exit 0
+      end
+      
+      type_idx = type_choice.to_i - 1
+      if type_idx >= 0 && type_idx < project_types.length
+        app_type = project_types[type_idx]
+      else
+        puts "❌ Pilihan tidak valid."
+        exit 1
+      end
+    else
+      app_type = project_types.first
+    end
+  end
+
+  # Resolve package name from projects.json
+  default_package_name = app_data['Package ID'][app_type]
+
+  # Input Package Name
+  puts "\n============================================================"
+  puts "🔑 INPUT PACKAGE NAME"
+  puts "============================================================"
+  print "Masukkan Package Name Aplikasi (Default: #{default_package_name}): "
+  input_package_name = $stdin.gets.chomp.strip
+  package_name = input_package_name.empty? ? default_package_name : input_package_name
+
+  # Normalize directory type name (HRM Apps -> Hrm Apps)
+  folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+
+  metadata_root = File.join(project_root, "store_listings", folder_type)
+  metadata_android_path = File.join(metadata_root, "android")
+
+  # Clean existing directory to prevent Supply setup from skipping download
+  if File.exist?(metadata_android_path)
+    puts "🧹 Membersihkan direktori metadata lokal lama di #{metadata_android_path}..."
+    FileUtils.rm_rf(metadata_android_path)
+  end
+
+  puts "\n============================================================"
+  puts "ℹ️ TARGET DOWNLOAD PLAY STORE METADATA"
+  puts "============================================================"
+  puts "Project ID     : #{run_id}"
+  puts "Project Name   : #{app_data['Project']['Project Name']}"
+  puts "App Type       : #{app_type}"
+  puts "Package Name   : #{package_name}"
+  puts "Metadata Path  : #{metadata_android_path}"
+  puts "============================================================\n"
 end
-
-puts "\n============================================================"
-puts "ℹ️ TARGET DOWNLOAD PLAY STORE METADATA"
-puts "============================================================"
-puts "Project ID     : #{run_id}"
-puts "Project Name   : #{app_data['Project']['Project Name']}"
-puts "App Type       : #{app_type}"
-puts "Package Name   : #{package_name}"
-puts "Metadata Path  : #{metadata_android_path}"
-puts "============================================================\n"
 
 # 4. Build Supply Options
 options = {

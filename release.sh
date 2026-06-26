@@ -516,7 +516,9 @@ on_exit() {
         echo ""
         echo "🧹 Membersihkan perubahan temporary pada Release Hub..."
         git checkout -- android/ ios/ >/dev/null 2>&1
-        rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
+        if [ "${KEEP_ICON:-false}" != true ]; then
+            rm -f icon/*.png icon/icon_raw >/dev/null 2>&1
+        fi
     fi
 
     if [ -f "${SCRIPT_DIR}/assets/done_sound.wav" ]; then
@@ -579,6 +581,7 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
         echo "K) Login Google Drive"
         echo "L) Push Metadata (App Store) Manual"
         echo "M) Login Fastlane (App Store Connect)"
+        echo "N) Download & Process Icon"
         echo "============================================================"
         echo "📋 DAFTAR PROJECT"
         echo "============================================================"
@@ -597,7 +600,7 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
             project_input="$MENU_CHOICE"
             echo "Pilihan otomatis (dari argumen): $project_input"
         else
-            echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J/K/L/M): "
+            echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J/K/L/M/N): "
             read -r project_input
         fi
         
@@ -777,6 +780,18 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
                 bash "${SCRIPT_DIR}/scripts/login_fastlane.sh" --spawn-terminal
             fi
             exit 0
+        elif [[ "$project_input" =~ ^[Nn]$ ]]; then
+            echo "============================================================"
+            echo "🖼️ DOWNLOAD & PROCESS ICON"
+            echo "============================================================"
+            read -e -p "Masukkan URL Icon (Google Drive/Lainnya) atau Path Lokal: " ICON_INPUT
+            if [ -z "$ICON_INPUT" ]; then
+                echo "❌ Input tidak boleh kosong."
+                exit 1
+            fi
+            bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_INPUT"
+            echo "✅ Hasil disimpan di icon/"
+            exit 0
         fi
 
         
@@ -897,6 +912,7 @@ fi
                 echo "22) Build AAB"
                 echo "23) Upload Playstore (AAB)"
                 echo "24) Submit Playstore (Playwright UI)"
+                echo "25) Download & Process Icon"
                 echo "------------------------------------------------------------"
                 if [ -n "$ACTION_CHOICE" ]; then
                     action_choice="$ACTION_CHOICE"
@@ -1100,9 +1116,9 @@ for action in "${ACTION_ARRAY[@]}"; do
     if [ -z "$action" ]; then
         continue
     fi
-    if ! [[ "$action" =~ ^([1-9]|1[0-9]|2[0-4])$ ]]; then
+    if ! [[ "$action" =~ ^([1-9]|1[0-9]|2[0-5])$ ]]; then
         echo "❌ Aksi tidak valid: $action"
-        echo "Gunakan nomor aksi 1-24. Lihat daftar dengan: release --help"
+        echo "Gunakan nomor aksi 1-25. Lihat daftar dengan: release --help"
         exit 1
     fi
     if [[ "$action" == "16" || "$action" == "19" ]]; then
@@ -1376,6 +1392,17 @@ execute_action() {
                    ;;
                 23) 
                    ruby "${SCRIPT_DIR}/scripts/submit_playstore_version.rb" "$TARGET_ID" "$type_clean" || { echo "❌ Proses upload Play Store gagal!"; exit 1; }
+                   ;;
+                25)
+                   KEEP_ICON=true
+                   ICON_URL=$(jq -r ".\"$TARGET_ID\".Project.Icon // empty" "$PROJECT_FILE")
+                   if [ -n "$ICON_URL" ]; then
+                       echo "⬇️ Mengunduh dan memproses icon untuk $TARGET_ID..."
+                       bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
+                       echo "✅ Icon berhasil diunduh dan diproses, tersimpan di folder icon/"
+                   else
+                       echo "⚠️ URL Icon tidak ditemukan di projects.json untuk $TARGET_ID"
+                   fi
                    ;;
             esac
         done
