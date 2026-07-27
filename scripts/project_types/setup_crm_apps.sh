@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# scripts/project_types/setup_approval_apps.sh
+# scripts/setup_hrm.sh
 
 # Args: ID, REGION, APP_NAME, TYPE, BASE_URL, DATABASE, APP_PACKAGE_NAME
 ID="$1"
@@ -24,7 +24,7 @@ if [ -f "$GIT_WORKTREE_HELPERS" ]; then
     source "$GIT_WORKTREE_HELPERS"
 fi
 
-echo "⚙️ SETUP PROJECT APPROVAL APPS"
+echo "⚙️ SETUP PROJECT HRM"
 
 # Read config
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -37,7 +37,7 @@ if [ -n "${RELEASE_HUB_WORKTREE_PATH:-}" ] && { [ -z "${RELEASE_HUB_WORKTREE_TYP
 else
     LOCATION_RAW=$(jq -r ".types[\"$TYPE\"].location // empty" "$CONFIG_FILE")
     if [ -z "$LOCATION_RAW" ]; then
-        echo "  ⚠️ Lokasi untuk tipe $TYPE tidak ditemukan di config.json. Skip Approval Apps."
+        echo "  ⚠️ Lokasi untuk tipe $TYPE tidak ditemukan di config.json. Skip setup HRM."
         exit 0
     fi
     LOCATION="${LOCATION_RAW/#\~/$HOME}"
@@ -57,8 +57,9 @@ echo "  📍 Lokasi App  : $LOCATION"
 
 cd "$LOCATION" || exit 1
 
-# 3. Determine Stable Branch
-STABLE_BRANCH="development"
+# 3. Determine Stable Branch based on REGION
+STABLE_BRANCH="stable-core"
+
 echo "  🌿 Stable Branch: $STABLE_BRANCH"
 
 # Check if branch exists
@@ -138,9 +139,8 @@ update_env "ANDROID_ID" "\"$APP_PACKAGE_NAME\""
 update_env "IOS_ID" "\"$APP_PACKAGE_NAME\""
 update_env "FIREBASE_PROJECT_ID" "\"$FIREBASE_PROJECT_ID\""
 update_env "BASE_URL" "\"$BASE_URL\""
-update_env "PORT" "\"\""
 update_env "DEFAULT_DB" "\"$DATABASE\""
-update_env "TARGET_RELEASE_DATE" "\"$DATE_PLUS_2M\""
+update_env "FACE_RECOG_DISABLE_UNTIL" "\"$DATE_PLUS_2M\""
 
 # 5. Update Android Package Name dan iOS Bundle ID
 OLD_ANDROID_PKG=$(grep "applicationId" "android/app/build.gradle.kts" 2>/dev/null | sed 's/.*applicationId = "\(.*\)".*/\1/' | head -n 1)
@@ -238,4 +238,4 @@ else
     echo "  ✅ Berhasil push konfigurasi ke branch '$ID'."
 fi
 
-echo "  ✅ Setup Approval Apps selesai."
+echo "  ✅ Setup HRM selesai."

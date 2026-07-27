@@ -2,6 +2,7 @@
 
 require 'json'
 require 'fileutils'
+require_relative 'app_store_connect_auth_helper'
 
 begin
   require 'spaceship'
@@ -85,13 +86,21 @@ puts "------------------------------------------------------------"
 
 puts "⏳ Menghubungkan ke App Store Connect..."
 begin
-  Spaceship::ConnectAPI.login
+  AppStoreConnectAuthHelper.ensure_authenticated!(
+    context: "Request Unlisted App #{app_name || bundle_id}",
+    project_root: project_root
+  )
 rescue => e
   puts "❌ Gagal login ke App Store Connect: #{e.message}"
   exit 1
 end
 
-app = Spaceship::ConnectAPI::App.find(bundle_id)
+app = AppStoreConnectAuthHelper.with_auth_retry(
+  context: "Request Unlisted App #{app_name || bundle_id}",
+  project_root: project_root
+) do
+  Spaceship::ConnectAPI::App.find(bundle_id)
+end
 
 unless app
   puts "❌ Aplikasi dengan Bundle ID '#{bundle_id}' tidak ditemukan di App Store Connect."
@@ -110,8 +119,8 @@ puts "📋 MENJALANKAN PLAYWRIGHT AUTOMATION"
 puts "============================================================"
 puts "Browser Chrome automation akan segera terbuka."
 puts "-> Jika Anda belum login ke akun Apple Developer di profil Chrome ini, Anda akan diminta untuk login."
-puts "-> Playwright akan otomatis mengisi form Unlisted App Request."
-puts "-> Tunggu sampai skrip memberikan pesan PAUSE sebelum Anda menekan Submit."
+puts "-> Playwright akan otomatis mengisi form Unlisted App Request dan menekan Submit."
+puts "-> Tunggu sampai proses selesai, atau jika ada error, skrip akan memberikan pesan PAUSE untuk inspeksi manual."
 puts "============================================================"
 
 sleep(2)

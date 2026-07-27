@@ -4,6 +4,7 @@ require 'fastlane'
 require 'spaceship'
 require 'dotenv'
 require 'json'
+require_relative 'app_store_connect_auth_helper'
 
 # Muat file .env dari root directory
 Dotenv.load(File.expand_path('../../.env', __FILE__))
@@ -31,9 +32,8 @@ if File.exist?(config_file) && !app_type.nil? && !app_type.empty?
 end
 
 issuer_id = ENV['ASC_ISSUER_ID']
-key_id = ENV['ASC_KEY_ID']
-key_filepath = ENV['ASC_KEY_FILE']
 apple_id = ENV['APPLE_ID_USERNAME']
+project_root = File.expand_path('..', __dir__)
 
 if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
   puts "❌ Konfigurasi App Store Connect belum lengkap di .env."
@@ -42,34 +42,14 @@ if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
 end
 
 using_api_key = !(issuer_id.nil? || issuer_id.empty?)
-
-if using_api_key
-  key_filepath = File.expand_path("../../#{key_filepath}", __FILE__)
-  if !File.exist?(key_filepath)
-    puts "❌ File API Key tidak ditemukan di: #{key_filepath}"
-    exit 1
-  end
-end
+key_filepath = AppStoreConnectAuthHelper.resolve_api_key_path(project_root: project_root) if using_api_key
 
 begin
-  if using_api_key
-    puts "🔑 Melakukan otentikasi menggunakan API Key..."
-    token = Spaceship::ConnectAPI::Token.create(
-      key_id: key_id,
-      issuer_id: issuer_id,
-      filepath: key_filepath
-    )
-    Spaceship::ConnectAPI.token = token
-  else
-    puts "🔑 Melakukan otentikasi menggunakan Apple ID (#{apple_id})..."
-    puts "   (Jika diminta, masukkan password dan kode OTP/2FA di terminal)"
-    
-    ENV['FASTLANE_USER'] = apple_id
-    ENV['FASTLANE_ITC_TEAM_ID'] = ENV['ITC_TEAM_ID'] unless ENV['ITC_TEAM_ID'].nil? || ENV['ITC_TEAM_ID'].empty?
-    ENV.delete('FASTLANE_TEAM_ID') # Jangan set ini secara global agar Spaceship Connect API tidak salah baca
-    
-    Spaceship::ConnectAPI.login(apple_id)
-  end
+  AppStoreConnectAuthHelper.ensure_authenticated!(
+    context: "Upload App Store #{app_name || app_identifier}",
+    project_root: project_root
+  )
+  ENV.delete('FASTLANE_TEAM_ID') unless using_api_key # Hindari Spaceship Connect API salah baca team saat upload App Store.
   
   # Cari App
   app = Spaceship::ConnectAPI::App.find(app_identifier)
@@ -107,31 +87,18 @@ begin
 
   config = FastlaneCore::Configuration.create(Pilot::Options.available_options, options)
   
-  if ENV['SKIP_UPLOAD'] == 'true'
-    puts "⏭️ Melewati proses upload IPA karena SKIP_UPLOAD=true..."
-  else
-    upload_thread = Thread.new do
-      Pilot::BuildManager.new.upload(config)
+  AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Upload IPA App Store #{app_name || app_identifier}",
+    project_root: project_root
+  ) do
+    if ENV['SKIP_UPLOAD'] == 'true'
+      puts "⏭️ Melewati proses upload IPA karena SKIP_UPLOAD=true..."
+    else
+      AppStoreConnectAuthHelper.run_with_spinner('Mengunggah IPA ke Apple Server') do
+        Pilot::BuildManager.new.upload(config)
+      end
+      puts "✅ Upload IPA selesai!"
     end
-    
-    # Tunggu sebentar agar log awal Fastlane tercetak, lalu beri baris baru
-    sleep 2
-    puts "" 
-    
-    spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-    i = 0
-    start_time = Time.now
-    while upload_thread.alive?
-      elapsed = (Time.now - start_time).to_i
-      mins = elapsed / 60
-      secs = elapsed % 60
-      print "\r⏳ #{spinner[i % spinner.length]} Mengunggah IPA ke Apple Server... (Waktu berlalu: #{mins}m #{secs}s)   "
-      i += 1
-      sleep 0.2
-    end
-    
-    upload_thread.join
-    puts "\n✅ Upload IPA selesai!"
   end
   
   puts "\n🎉 Build berhasil diunggah ke App Store Connect!"

@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: financial_features.js");
 
@@ -12,10 +13,7 @@ module.exports = async function(page, appData) {
     await page.getByRole('button', { name: 'Next' }).click();
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-
-    // Tunggu proses save di background selesai
-    await page.waitForTimeout(2000);
-
+    await waitAfterSave(page, 'financial features');
     await page.getByRole('button', { name: 'Dashboard' }).click();
 
     // 2. Beri jeda sebentar untuk menunggu render atau proses save.

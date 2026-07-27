@@ -8,6 +8,7 @@ require 'fastlane'
 require 'deliver'
 require 'deliver/options'
 require 'fastlane_core'
+require_relative 'app_store_connect_auth_helper'
 
 # 1. Path definitions
 script_dir = __dir__
@@ -191,8 +192,6 @@ puts "============================================================\n"
 
 # 4. Authenticate Setup
 issuer_id = ENV['ASC_ISSUER_ID']
-key_id = ENV['ASC_KEY_ID']
-key_filepath = ENV['ASC_KEY_FILE']
 apple_id = ENV['APPLE_ID_USERNAME']
 
 if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
@@ -206,18 +205,7 @@ if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
 end
 
 using_api_key = !(issuer_id.nil? || issuer_id.empty?)
-
-if using_api_key
-  key_filepath = File.expand_path("../#{key_filepath}", script_dir)
-  if !File.exist?(key_filepath)
-    puts "❌ File API Key tidak ditemukan di: #{key_filepath}"
-    # Clean up temp folder before exit
-    if temp_metadata_dir && File.directory?(temp_metadata_dir)
-      FileUtils.rm_rf(temp_metadata_dir)
-    end
-    exit 1
-  end
-end
+key_filepath = AppStoreConnectAuthHelper.resolve_api_key_path(project_root: project_root) if using_api_key
 
 # 5. Handle Icon download & prepare
 custom_icon_url = app_data['Project']['Icon']
@@ -342,6 +330,10 @@ end
 
 # 8. Interactive Confirmation & Execution
 begin
+  AppStoreConnectAuthHelper.ensure_authenticated!(
+    context: "Push App Store Metadata #{app_name || bundle_id}",
+    project_root: project_root
+  )
 
   # 8. Build Deliver Options
   options = {
@@ -373,45 +365,36 @@ begin
   
   puts "⏳ Menghubungkan ke App Store Connect dan mengunggah metadata & screenshots..."
   
-  # Jalankan upload dalam thread agar responsive
-  upload_thread = Thread.new do
-    # Initialize runner first so it authenticates Spaceship automatically
-    runner = Deliver::Runner.new(config)
+  AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Push App Store Metadata #{app_name || bundle_id}",
+    project_root: project_root
+  ) do
+    AppStoreConnectAuthHelper.run_with_spinner('Mengunggah metadata') do
+      # Initialize runner first so it authenticates Spaceship automatically
+      runner = Deliver::Runner.new(config)
 
-    # 8a. Wipe all existing screenshots manually across all locales
-    puts "🧹 Menghapus seluruh screenshot yang ada di App Store Connect..."
-    app = Deliver.cache[:app]
-    if app
-      edit_version = app.get_edit_app_store_version
-      if edit_version
-        localizations = edit_version.get_app_store_version_localizations
-        localizations.each do |loc|
-          sets = loc.get_app_screenshot_sets
-          sets.each do |set|
-            puts "   🗑️  Menghapus screenshot lama dari locale: #{loc.locale}"
-            set.delete!
+      # 8a. Wipe all existing screenshots manually across all locales
+      puts "🧹 Menghapus seluruh screenshot yang ada di App Store Connect..."
+      app = Deliver.cache[:app]
+      if app
+        edit_version = app.get_edit_app_store_version
+        if edit_version
+          localizations = edit_version.get_app_store_version_localizations
+          localizations.each do |loc|
+            sets = loc.get_app_screenshot_sets
+            sets.each do |set|
+              puts "   🗑️  Menghapus screenshot lama dari locale: #{loc.locale}"
+              set.delete!
+            end
           end
         end
       end
-    end
 
-    # 8b. Run Deliver to upload the new en-US metadata & screenshots
-    runner.run
+      # 8b. Run Deliver to upload the new en-US metadata & screenshots
+      runner.run
+    end
   end
-  
-  spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-  i = 0
-  start_time = Time.now
-  while upload_thread.alive?
-    elapsed = (Time.now - start_time).to_i
-    mins = elapsed / 60
-    secs = elapsed % 60
-    print "\r⏳ #{spinner[i % spinner.length]} Mengunggah metadata... (Waktu berlalu: #{mins}m #{secs}s)   "
-    i += 1
-    sleep 0.2
-  end
-  
-  upload_thread.join
+
   puts "\n\n✅ Upload App Store Metadata selesai dengan sukses!"
 rescue => ex
   puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"

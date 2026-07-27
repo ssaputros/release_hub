@@ -318,7 +318,8 @@
       "Database": "pancaran-live",
       "Icon": ""
     },
-    "Play Console Dashboard": {},
+    "Play Console Dashboard": {
+    },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.pancaran"
     },
@@ -363,13 +364,59 @@
     "Project": {
       "Project Name": "PT Sarana Instrument",
       "Region": "Indonesia",
+      "Environment": "Live",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
+      "Localization": "Indonesia",
       "App Name": {
-        "HRM Apps": "SI-HR"
+        "HRM Apps": "Sarana Intrument EVA"
       },
       "Type": "HRM Apps",
       "Base URL": "https://sarana-instrument.hashmicro.co",
-      "Database": "PTSI",
-      "Icon": "https://drive.google.com/open?id=1TlWNq1-DLZZul0TPweQE7ccjDey00YWQ"
+      "Database": "saranainstrument",
+      "Icon": "",
+      "Cutoff Date": "2026-01-19",
+      "Target build .apk": "2026-07-22",
+      "Target Release Google Playstore and Apps Store": "2026-07-31",
+      "Hide Menu": "Loans\nTraining\nCareer Transition\nE Learning",
+      "Additional Notes & Guidance": "Live setup runs after staging build and version bump; same package/bundle/branch as staging."
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.ptsaranainstrument"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.ptsaranainstrument"
+    }
+  },
+  "ptsaranainstrumentstaging": {
+    "Branch": {
+      "HRM Apps": "ptsaranainstrument"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "PT Sarana Instrument Staging",
+      "Region": "Indonesia",
+      "Environment": "Staging",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
+      "Localization": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Sarana Intrument EVA Staging"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://sarana-staging.hash-016.com",
+      "Database": "sarana-staging-score22-master-core-construction-db",
+      "Icon": "",
+      "Cutoff Date": "2026-01-19",
+      "Target build .apk": "2026-07-22",
+      "Target Release Google Playstore and Apps Store": "2026-07-31",
+      "Hide Menu": "Loans\nTraining\nCareer Transition\nE Learning",
+      "Additional Notes & Guidance": "Staging built first for training; same package/bundle/branch as live; after staging build, bump version and run live setup."
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.ptsaranainstrument"
@@ -435,7 +482,7 @@
       "HRM Apps": "sunasia"
     },
     "Play Console Dashboard": {
-      "HRM Apps": ""
+      "HRM Apps": "4973408989082250286"
     },
     "Firebase Project": "hashmicro-production-17",
     "Project": {
@@ -447,7 +494,7 @@
       "Type": "HRM Apps",
       "Base URL": "https://sunasia.hash-029.com",
       "Database": "sunasia-score22-ph-db",
-      "Icon": ""
+      "Icon": "assets/icons/sunasia-logo.png"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.sunasia"
@@ -472,10 +519,10 @@
       "Icon": "https://drive.google.com/open?id=1CYOOVoL3fviw8aW4RRkfFnY5Bqw-lkwE"
     },
     "Play Console Dashboard": {
-      "HRM Apps": "4975628249215419410"
+      "HRM Apps": "4975001057131647279"
     },
     "Package ID": {
-      "HRM Apps": "com.hashmicro.eva.leo"
+      "HRM Apps": "com.hashmicro.eva.leonew"
     },
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.leo"
@@ -523,13 +570,16 @@
     "Project": {
       "Project Name": "Perumda Tuah Sekata",
       "Region": "Indonesia",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
       "App Name": {
         "HRM Apps": "Tuah Sekata HRIS"
       },
       "Type": "HRM Apps",
-      "Base URL": "https://tuahsekata.hash-015.com",
-      "Database": "",
-      "Icon": ""
+      "Base URL": "https://tuahsekata.hashmicro.co",
+      "Database": "tuahsekata-live",
+      "Icon": "assets/icons/Logo-BUMD-1.png"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.perumdatuahsekata"
@@ -593,6 +643,339 @@
     },
     "Play Console Dashboard": {
       "CRM Apps": "4975772429694271291"
+    }
+  },
+  "sunindo": {
+    "Branch": {
+      "HRM Apps": "sunindo"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4975606580008590106"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Sunindo",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Sunindo HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://suni-rtm-psm-dev.hash-022.com",
+      "Database": "suni-rtm-psm-clean",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.sunindo"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.sunindo"
+    }
+  },
+  "ptmodivainternational": {
+    "Branch": {
+      "CRM Apps": "ptmodivainternational"
+    },
+    "Play Console Dashboard": {
+      "CRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "PT MODIVA INTERNATIONAL",
+      "Region": "Indonesia",
+      "App Name": {
+        "CRM Apps": "PT MODIVA INTERNATIONAL"
+      },
+      "Type": "CRM Apps",
+      "Base URL": "https://ptmodiva-dev.hash-026.com",
+      "Database": "ptmodiva-dev-score22-master-core-db",
+      "Icon": "assets/icons/pt-modiva-international-1762419036.webp"
+    },
+    "Package ID": {
+      "CRM Apps": "com.hashmicro3.crm.modivainternational"
+    },
+    "Bundle ID": {
+      "CRM Apps": "com.hashmicro3.crm.modivainternational"
+    }
+  },
+  "ptcoppalutamaindomelt": {
+    "Branch": {
+      "HRM Apps": "ptcoppalutamaindomelt"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "PT Coppal Utama Indomelt",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Coppal HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://coppal.hash-026.com",
+      "Database": "coppal-score22-master-core-db",
+      "Icon": "",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.ptcoppalutamaindomelt"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.ptcoppalutamaindomelt"
+    }
+  },
+  "uitc": {
+    "Branch": {
+      "CRM Apps": "uitc-sales"
+    },
+    "Play Console Dashboard": {
+      "CRM Apps": ""
+    },
+    "Firebase Project": "crm-notification-3",
+    "Project": {
+      "Project Name": "United Italian Trading Corporation",
+      "Region": "Singapore",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "CRM Apps",
+      "App Name": {
+        "CRM Apps": "UITC Sales"
+      },
+      "Type": "CRM Apps",
+      "Base URL": "https://uicl.hash-013.com",
+      "Database": "uicl-score22-sg-db",
+      "Icon": "assets/icons/uitc-logo.png"
+    },
+    "Package ID": {
+      "CRM Apps": "com.hashmicro3.crm.uitc"
+    },
+    "Bundle ID": {
+      "CRM Apps": "com.hashmicro3.crm.uitc"
+    }
+  },
+  "topdataglobalitsolutions": {
+    "Branch": {
+      "HRM Apps": "topdataglobalitsolutions"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4976315588348600894"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "TopData Global IT Solutions",
+      "Region": "Philippines",
+      "App Name": {
+        "HRM Apps": "TopData HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://topdata.hash-029.com",
+      "Database": "topdata-260511",
+      "Icon": "https://drive.google.com/open?id=1TPVByUhLYacgwBQggazIoVzaoP9MsKun",
+      "Localization": "Philippines",
+      "DB Selection Required": "Yes",
+      "Target build .apk": "07/07/2026",
+      "Target Release Google Playstore and Apps Store": "14 Jul 2026",
+      "Cutoff Date": "June 17, 2026"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.topdataglobalitsolutions"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.topdataglobalitsolutions"
+    }
+  },
+  "eonbulkhandlingservicesinc": {
+    "Branch": {
+      "HRM Apps": "eonbulkhandlingservicesinc"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4974662375967564856"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "EON Bulk Handling Services Inc.",
+      "Region": "Philippines",
+      "App Name": {
+        "HRM Apps": "EON HRM"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://eonbulk.hash-029.com",
+      "Database": "eon-260514",
+      "Icon": "https://drive.google.com/open?id=1dKg9wwxUs1MVO4o4Vgg1HolcddDsDM02",
+      "Localization": "Philippines",
+      "DB Selection Required": "Yes",
+      "Target build .apk": "14/07/2026",
+      "Target Release Google Playstore and Apps Store": "21 Jul 2026",
+      "Cutoff Date": "May 21, 2026",
+      "Hide Menu": "Recruitment\nAppraisals\nEmployee Referral\nTraining / eLearning\nSurvey\nTimesheets\nHR Warning / Disciplinary"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.eonbulkhandlingservicesinc"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.eonbulkhandlingservicesinc"
+    }
+  },
+  "yaskawaelectricindonesia": {
+    "Branch": {
+      "HRM Apps": "yaskawaelectricindonesia"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4974900586353388279"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Yaskawa Electric Indonesia",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Yaskawa HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://yaskawa.hashmicro.co",
+      "Database": "yaskawa-live",
+      "Icon": "",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
+      "Localization": "Indonesia"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.yaskawa"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.yaskawa"
+    }
+  },
+  "arkempiresdnbhd": {
+    "Branch": {
+      "HRM Apps": "arkempiresdnbhd"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4972888138027119786"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "ARK EMPIRE SDN BHD",
+      "Region": "Malaysia",
+      "App Name": {
+        "HRM Apps": "ARK HR"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://arkempire.hash-006.com",
+      "Database": "arkempire-live-0904",
+      "Icon": "https://drive.google.com/open?id=1VMyV0gmI8xWQ0a1kjq6fR0TkpOBlpV_i"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.arkempiresdnbhd"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.arkempiresdnbhd"
+    }
+  },
+  "samalshores": {
+    "Branch": {
+      "HRM Apps": "samalshores"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4974468208060339503"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Samal Shores Inc",
+      "Region": "Philippines",
+      "Product": "HMX",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
+      "App Name": {
+        "HRM Apps": "Discovery Samal"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://samalshores.hash-028.com",
+      "Database": "hmx_samalshores",
+      "User Login": "admin",
+      "Password Login": "Hash8910Micro#",
+      "Icon": "assets/icons/discovery-samal_logo.png"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.samalshores"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.samalshores"
+    }
+  },
+  "bci": {
+    "Branch": {
+      "HRM Apps": "bci"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "Brentvale College HRIS"
+      },
+      "Project Name": "Bci",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://brentvalecollege.hashmicro.co",
+      "Database": "brentvalecollege-live",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.bci"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.bci"
+    }
+  },
+  "gmt": {
+    "Branch": {
+      "HRM Apps": "gmt"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "GMT HRIS"
+      },
+      "Project Name": "Gmt",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "http://globalmultipro.hash-025.com",
+      "Database": "globalmultipro",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.gmt"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.gmt"
+    }
+  },
+  "sedulangbintangteknik": {
+    "Branch": {
+      "HRM Apps": "sdt-20260424"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "Sedulang HRIS"
+      },
+      "Project Name": "Sedulangbintangteknik",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://sedulangbintangteknik.hash-005.com",
+      "Database": "sedulangdb",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4975406195634872565"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.sedulangbintangteknik"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.sdt"
     }
   }
 }

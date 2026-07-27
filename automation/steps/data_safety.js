@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: data_safety.js");
 
@@ -14,7 +15,7 @@ module.exports = async function(page, appData) {
     await page.getByRole('button', { name: 'Next' }).click();
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await page.waitForTimeout(2000);
+    await waitAfterSave(page, 'data safety');
     await page.getByRole('link', { name: 'Go back to Dashboard' }).click();
        
 

@@ -12,6 +12,11 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 PROJECT_FILE="${SCRIPT_DIR}/projects.json"
 CONFIG_FILE="${SCRIPT_DIR}/config.json"
+GIT_WORKTREE_HELPERS="${SCRIPT_DIR}/scripts/git_worktree_helpers.sh"
+if [ -f "$GIT_WORKTREE_HELPERS" ]; then
+    # shellcheck source=/dev/null
+    source "$GIT_WORKTREE_HELPERS"
+fi
 
 expand_path() {
     local path_value="$1"
@@ -71,8 +76,21 @@ echo "  📍 Lokasi: $APP_LOCATION"
 
 if [ -n "$BRANCH" ]; then
     echo "  🌿 Pindah ke branch: $BRANCH"
-    git checkout "$BRANCH" >/dev/null 2>&1
-    git pull origin "$BRANCH" >/dev/null 2>&1
+    if command -v git_checkout_or_use_worktree >/dev/null 2>&1; then
+        if ! git_checkout_or_use_worktree "$BRANCH"; then
+            echo "  ❌ Harap commit/stash perubahan Anda atau gunakan --worktree-path ke worktree branch '$BRANCH'."
+            exit 1
+        fi
+        APP_LOCATION=$(pwd)
+        echo "  📍 Lokasi aktif: $APP_LOCATION"
+        git_pull_current_branch "$BRANCH"
+    else
+        if ! git checkout "$BRANCH" >/dev/null 2>&1; then
+            echo "  ❌ Error: Gagal pindah ke branch '$BRANCH'. Harap commit/stash perubahan Anda."
+            exit 1
+        fi
+        git pull origin "$BRANCH" >/dev/null 2>&1
+    fi
 fi
 
 VERSION=$(grep '^version: ' pubspec.yaml | head -n 1 | awk '{print $2}' | tr -d '\r')

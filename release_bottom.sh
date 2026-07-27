@@ -8,11 +8,9 @@ if [[ " ${ACTION_ARRAY[*]} " =~ " 4 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 7 " ]
     echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
     echo "============================================================"
     cd "${SCRIPT_DIR}/automation" || exit 1
-    if [ ! -d "node_modules" ]; then
-        echo "📦 Menginstal dependensi automation (Playwright)..."
-        npm install
-        npx playwright install chromium
-    fi
+    echo "📦 Memastikan dependensi automation dari package.json..."
+    npm install || { echo "❌ npm install gagal."; exit 1; }
+    ./node_modules/.bin/playwright install chromium || { echo "❌ playwright install chromium gagal."; exit 1; }
     
     if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
         echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."

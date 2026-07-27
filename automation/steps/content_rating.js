@@ -1,3 +1,5 @@
+const readline = require('readline');
+
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: content_rating.js");
 
@@ -8,37 +10,36 @@ module.exports = async function(page, appData) {
     }
     await entryBtn.click();
 
-    const startBtn = page.getByRole('button', { name: 'Start questionnaire' });
-    const editBtn = page.getByRole('button', { name: 'Edit' });
+    console.log("\n==========================================================================");
+    console.log("⚠️  PENGISIAN CONTENT RATING MANUAL DIBUTUHKAN  ⚠️");
+    console.log("==========================================================================");
+    console.log("Script tidak akan mengisi kuisioner otomatis.");
+    console.log("Silakan isi kuisioner Content Rating secara manual di browser yang terbuka.");
+    console.log("Selesaikan hingga tahap submit dan siap untuk kembali ke Dashboard.");
+    console.log("==========================================================================\n");
 
-    // Tunggu sebentar hingga salah satu tombol muncul
-    await startBtn.or(editBtn).waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
 
-    if (await startBtn.isVisible()) {
-        await startBtn.click();
-    } else if (await editBtn.isVisible()) {
-        await editBtn.click();
-    } else {
-        console.log("⚠️ Tidak menemukan tombol 'Start questionnaire' maupun 'Edit'. Mencoba lanjut...");
+    await new Promise(resolve => rl.question('Tekan ENTER jika Anda sudah selesai mengisi Content Rating di browser...', () => {
+        rl.close();
+        resolve();
+    }));
+
+    console.log("✅ Melanjutkan eksekusi setelah konfirmasi manual...");
+    await page.waitForTimeout(1000);
+
+    if (!/\/app-dashboard/.test(page.url())) {
+        const dashboardUrl = page.url().replace(/\/app-content\/.*$/, '/app-dashboard');
+        if (/\/app\//.test(dashboardUrl)) {
+            console.log(`Mengalihkan kembali ke dashboard...`);
+            await page.goto(dashboardUrl, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+        }
     }
+    await page.waitForTimeout(3000);
 
-    await page.getByLabel('', { exact: true }).click();
-    await page.getByLabel('', { exact: true }).fill('product@hashmicro.com');
-    await page.getByRole('radio', { name: 'All Other App Types' }).check();
-    await page.getByRole('checkbox', { name: 'I agree to the Terms of Use' }).check();
-    await page.getByRole('button', { name: 'Next' }).click();
-    await page.waitForTimeout(2000);
-
-    console.log("\n============================================================");
-    console.log("🛑 INTERVENSI MANUAL DIBUTUHKAN!");
-    console.log("Skrip telah mengisi form tahap pertama.");
-    console.log("Silakan lanjutkan mengisi sisa kuesioner (checklist radio button) di browser secara manual.");
-    console.log("Setelah selesai, simpan (Save -> Next -> Save), lalu klik tombol 'Go back to Dashboard'.");
-    console.log("Skrip akan otomatis melanjutkan ke step berikutnya saat mendeteksi halaman Dashboard.");
-    console.log("============================================================\n");
-
-    // Tunggu sampai user kembali ke halaman dashboard (tanpa timeout)
-    await page.waitForURL(/\/app-dashboard/, { timeout: 0 });
-    
     console.log("✅ Halaman Dashboard terdeteksi. Step content_rating.js selesai!");
 };
+

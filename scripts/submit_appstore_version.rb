@@ -1,8 +1,7 @@
 require 'spaceship'
-
-require 'spaceship'
 require 'json'
 require 'fileutils'
+require_relative 'app_store_connect_auth_helper'
 
 # 1. Path definitions
 script_dir = __dir__
@@ -86,13 +85,21 @@ puts "------------------------------------------------------------"
 
 puts "⏳ Menghubungkan ke App Store Connect..."
 begin
-  Spaceship::ConnectAPI.login
+  AppStoreConnectAuthHelper.ensure_authenticated!(
+    context: "Submit App Store Version #{bundle_id}",
+    project_root: project_root
+  )
 rescue => e
   puts "❌ Gagal login ke App Store Connect: #{e.message}"
   exit 1
 end
 
-app = Spaceship::ConnectAPI::App.find(bundle_id)
+app = AppStoreConnectAuthHelper.with_auth_retry(
+  context: "Submit App Store Version #{bundle_id}",
+  project_root: project_root
+) do
+  Spaceship::ConnectAPI::App.find(bundle_id)
+end
 
 if app.nil?
   puts "❌ Aplikasi dengan Bundle ID '#{bundle_id}' tidak ditemukan di App Store Connect."
@@ -101,7 +108,12 @@ end
 
 # 1. Dapatkan build terakhir yang valid (sudah diproses)
 puts "🔍 Mencari build terbaru yang sudah diproses..."
-builds = app.get_builds(filter: { processingState: "VALID" }, sort: "-uploadedDate", includes: "preReleaseVersion")
+builds = AppStoreConnectAuthHelper.with_auth_retry(
+  context: "Cari build App Store #{bundle_id}",
+  project_root: project_root
+) do
+  app.get_builds(filter: { processingState: "VALID" }, sort: "-uploadedDate", includes: "preReleaseVersion")
+end
 latest_build = builds.first
 
 if latest_build.nil?
@@ -117,10 +129,20 @@ puts "✅ Build terakhir ditemukan: Versi #{version_string} (Build #{build_numbe
 # 2. Cek apakah versi draft sudah ada, jika belum buat baru
 puts "🔄 Memastikan versi App Store #{version_string} tersedia (draft/prepare for submission)..."
 begin
-  edit_version = app.ensure_version!(version_string, platform: "IOS")
+  edit_version = AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Siapkan versi App Store #{bundle_id}",
+    project_root: project_root
+  ) do
+    app.ensure_version!(version_string, platform: "IOS")
+  end
 rescue => e
   puts "⚠️ Peringatan saat menyiapkan versi: #{e.message}"
-  edit_version = app.get_edit_app_store_version
+  edit_version = AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Ambil draft App Store Version #{bundle_id}",
+    project_root: project_root
+  ) do
+    app.get_edit_app_store_version
+  end
 end
 
 if edit_version.nil?
@@ -131,7 +153,12 @@ end
 # 3. Tetapkan build ke versi ini
 puts "🔄 Menetapkan Build #{build_number} ke versi #{version_string}..."
 begin
-  edit_version.select_build(build_id: latest_build.id)
+  AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Tetapkan build App Store #{bundle_id}",
+    project_root: project_root
+  ) do
+    edit_version.select_build(build_id: latest_build.id)
+  end
 rescue => e
   puts "⚠️ Peringatan saat menetapkan build (mungkin sudah ditetapkan): #{e.message}"
 end
@@ -140,20 +167,40 @@ end
 puts "🚀 Mengirimkan aplikasi untuk App Review..."
 begin
   # 1. Cari Review Submission yang masih draft atau buat yang baru
-  submission = app.get_review_submissions(filter: { state: 'READY_FOR_REVIEW' }).first
+  submission = AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Cari App Review Submission #{bundle_id}",
+    project_root: project_root
+  ) do
+    app.get_review_submissions(filter: { state: 'READY_FOR_REVIEW' }).first
+  end
   if submission.nil?
-    submission = app.create_review_submission(platform: 'IOS')
+    submission = AppStoreConnectAuthHelper.with_auth_retry(
+      context: "Buat App Review Submission #{bundle_id}",
+      project_root: project_root
+    ) do
+      app.create_review_submission(platform: 'IOS')
+    end
   end
   
   # 2. Tambahkan App Store Version ke dalam Review Submission
   begin
-    submission.add_app_store_version_to_review_items(app_store_version_id: edit_version.id)
+    AppStoreConnectAuthHelper.with_auth_retry(
+      context: "Tambah versi ke review #{bundle_id}",
+      project_root: project_root
+    ) do
+      submission.add_app_store_version_to_review_items(app_store_version_id: edit_version.id)
+    end
   rescue => e
     # Abaikan peringatan jika versi sudah otomatis dimasukkan ke dalam draft
   end
 
   # 3. Eksekusi pengiriman untuk Review
-  submission.submit_for_review
+  AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Submit App Review #{bundle_id}",
+    project_root: project_root
+  ) do
+    submission.submit_for_review
+  end
   puts "🎉 Berhasil! Aplikasi Anda telah diajukan untuk review."
 rescue => e
   if e.message.include?("already been submitted") || e.message.include?("Waiting for Review") || e.message.include?("does not allow 'CREATE'") || e.message.include?("already in review")

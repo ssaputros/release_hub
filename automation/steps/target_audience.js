@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: target_audience.js");
 
@@ -12,8 +13,8 @@ module.exports = async function(page, appData) {
     await page.getByRole('button', { name: 'Next' }).click();
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(2000);
-    await page.getByRole('link', { name: 'Go back to Dashboard' }).click();    
+    await waitAfterSave(page, 'target audience');
+    await page.getByRole('link', { name: 'Go back to Dashboard' }).click();
 
     // 2. Beri jeda sebentar untuk menunggu render atau proses save.
     // await page.waitForTimeout(2000); 

@@ -37,7 +37,9 @@ const packageName = meta.packageName;
 
 (async () => {
   const credentialsDir = path.join(__dirname, '../credentials');
-  const profileDir = path.join(credentialsDir, '.chrome_profile');
+  const profileDir = process.env.PLAYWRIGHT_CHROME_PROFILE_DIR
+    ? path.resolve(process.env.PLAYWRIGHT_CHROME_PROFILE_DIR)
+    : path.join(credentialsDir, '.chrome_profile');
 
   if (!fs.existsSync(profileDir)) {
     console.error("❌ Profil Chrome tidak ditemukan. Harap login terlebih dahulu.");
@@ -63,6 +65,8 @@ const packageName = meta.packageName;
     });
 
     const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
+    page.setDefaultTimeout(90000);
+    page.setDefaultNavigationTimeout(120000);
     
     const devIdFile = path.join(credentialsDir, 'playstore_dev_id.txt');
     let devId = "";
@@ -70,8 +74,8 @@ const packageName = meta.packageName;
     if (fs.existsSync(devIdFile)) {
         devId = fs.readFileSync(devIdFile, 'utf8').trim();
     } else {
-        await page.goto('https://play.google.com/console');
-        await page.waitForURL('**/developers/**');
+        await page.goto('https://play.google.com/console', { waitUntil: 'domcontentloaded', timeout: 120000 });
+        await page.waitForURL('**/developers/**', { timeout: 120000 });
         const url = page.url();
         const match = url.match(/(?:u\/\d+\/)?developers\/\d+/);
         if (match) {
@@ -80,13 +84,17 @@ const packageName = meta.packageName;
         }
     }
 
+    if (devId && !devId.includes('developers/')) {
+        devId = `developers/${devId}`;
+    }
+
     if (devId) {
         console.log(`🔗 Navigasi langsung ke Dashboard Aplikasi...`);
-        await page.goto(`https://play.google.com/console/${devId}/app-list`);
+        await page.goto(`https://play.google.com/console/${devId}/app-list`, { waitUntil: 'domcontentloaded', timeout: 120000 });
     } else {
-        await page.goto('https://play.google.com/console');
+        await page.goto('https://play.google.com/console', { waitUntil: 'domcontentloaded', timeout: 120000 });
     }
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('domcontentloaded', { timeout: 120000 });
 
     // ==========================================
     // KODE HASIL REKAMAN (SUDAH DINAMIS)

@@ -1,6 +1,26 @@
 {
-    "firebase_project": "hashmicro-production-18",
+    "firebase_project": "hashmicro-production-19",
     "types": {
+        "CRM Apps": {
+            "prefix": "com.hashmicro.crm",
+            "location": "~/Projects/HashMicro/CRM-APPS",
+            "gdrive_folder_id": "1RrDc3YD03u5fixp1rs1qRb9FZi_8XhDa",
+            "beta_app_review_info": {
+                "username": "admin",
+                "password": "Hash82821Micro#",
+                "app_description": "This app is a CRM application used by companies to manage sales."
+            }
+        },
+        "Inventory Apps": {
+            "prefix": "com.hashmicro.inventory_flutter",
+            "location": "~/Projects/HashMicro/new-inventory-apps",
+            "gdrive_folder_id": "1RrDc3YD03u5fixp1rs1qRb9FZi_8XhDa",
+            "beta_app_review_info": {
+                "username": "admin",
+                "password": "Hash82821Micro#",
+                "app_description": "This app is an Inventory application used by companies to manage stock."
+            }
+        },
         "HRM Apps": {
             "prefix": "com.hashmicro.eva",
             "location": "~/Projects/HashMicro/HrmApp",

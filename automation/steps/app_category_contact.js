@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: app_category_contact.js");
 
@@ -12,13 +13,13 @@ module.exports = async function(page, appData) {
     await page.getByRole('button', { name: 'Select a category' }).click();
     await page.getByRole('option', { name: 'Business' }).click();
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(2000);
+    await waitAfterSave(page, 'app category/contact');
     await page.getByRole('button', { name: 'Close' }).click();
     await page.locator('console-header').filter({ hasText: 'Store listing contact' }).locator('button').click();
     await page.locator('console-form-row').filter({ hasText: 'Email address *' }).getByLabel('', { exact: true }).click();
     await page.locator('console-form-row').filter({ hasText: 'Email address *' }).getByLabel('', { exact: true }).fill('product@hashmicro.com');
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(2000);
+    await waitAfterSave(page, 'app category/contact');
     await page.getByRole('button', { name: 'Close' }).click();
 
     // 2. Beri jeda sebentar untuk menunggu render atau proses save.

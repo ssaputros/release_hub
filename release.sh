@@ -31,6 +31,11 @@ if [ "$#" -gt 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+GIT_WORKTREE_HELPERS="${SCRIPT_DIR}/scripts/git_worktree_helpers.sh"
+if [ -f "$GIT_WORKTREE_HELPERS" ]; then
+    # shellcheck source=/dev/null
+    source "$GIT_WORKTREE_HELPERS"
+fi
 
 # Load .env variables automatically
 if [ -f "${SCRIPT_DIR}/.env" ]; then
@@ -134,7 +139,7 @@ show_help() {
     echo "  --type <tipe>         Menentukan Tipe Aplikasi (contoh: 'HRM Apps')"
     echo "  --base-url <url>      Menentukan Base URL API"
     echo "  --database <db>       Menentukan Nama Database"
-    echo "  --icon <url>          URL Google Drive gambar untuk diconvert otomatis menjadi ikon aplikasi"
+    echo "  --icon <url>          (Opsional) URL Google Drive gambar untuk diconvert otomatis menjadi ikon aplikasi"
     echo "  --notes <catatan>     Menambahkan catatan tambahan"
     echo ""
     echo "Contoh:"
@@ -158,6 +163,35 @@ require_option_value() {
         echo "❌ Option $option wajib memiliki nilai."
         exit 1
     fi
+}
+
+ensure_playwright_deps() {
+    local automation_dir="${SCRIPT_DIR}/automation"
+
+    echo "============================================================"
+    echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
+    echo "============================================================"
+
+    cd "$automation_dir" || exit 1
+
+    if [ ! -f "package.json" ]; then
+        echo "❌ package.json automation tidak ditemukan di: $automation_dir"
+        exit 1
+    fi
+
+    echo "📦 Memastikan dependensi automation dari package.json..."
+    npm install || { echo "❌ npm install gagal."; exit 1; }
+
+    if [ ! -x "node_modules/.bin/playwright" ]; then
+        echo "❌ Playwright CLI lokal tidak ditemukan setelah npm install."
+        echo "   Cek dependency playwright di ${automation_dir}/package.json"
+        exit 1
+    fi
+
+    echo "🌐 Memastikan browser Playwright Chromium tersedia..."
+    ./node_modules/.bin/playwright install chromium || { echo "❌ playwright install chromium gagal."; exit 1; }
+
+    cd "${SCRIPT_DIR}" || exit 1
 }
 
 # Looping untuk mem-parsing argumen
@@ -193,11 +227,25 @@ while [[ "$#" -gt 0 ]]; do
         --type) require_option_value "$1" "${2:-}"; TYPE="$2"; shift ;;
         --base-url) require_option_value "$1" "${2:-}"; BASE_URL="$2"; shift ;;
         --database) require_option_value "$1" "${2:-}"; DATABASE="$2"; shift ;;
-        --icon) require_option_value "$1" "${2:-}"; ICON="$2"; shift ;;
+        --icon)
+            if [[ $# -gt 1 && "$2" != -* ]]; then
+                ICON="$2"
+                shift
+            else
+                ICON=""
+            fi
+            ;;
         --notes) require_option_value "$1" "${2:-}"; NOTES="$2"; shift ;;
         --project-key) require_option_value "$1" "${2:-}"; PROJECT_KEY="$2"; shift ;;
         --branch-name) require_option_value "$1" "${2:-}"; BRANCH_NAME="$2"; shift ;;
-        --firebase-project) require_option_value "$1" "${2:-}"; FIREBASE_PROJECT="$2"; shift ;;
+        --firebase-project)
+            if [[ $# -gt 1 && "$2" != -* ]]; then
+                FIREBASE_PROJECT="$2"
+                shift
+            else
+                FIREBASE_PROJECT=""
+            fi
+            ;;
         --login-fastlane) LOGIN_FASTLANE_MODE=true ;;
         -m|--menu) require_option_value "$1" "${2:-}"; MENU_CHOICE="$2"; shift ;;
         -a|--action) require_option_value "$1" "${2:-}"; ACTION_CHOICE="$2"; shift ;;
@@ -424,7 +472,11 @@ validate_worktree_override() {
 
 app_location_for_type() {
     local type_name="$1"
+    local target_id="${2:-}"
     local raw_location=""
+    local resolved_location=""
+    local branch_name=""
+    local branch_worktree=""
 
     if [ -n "${RELEASE_HUB_WORKTREE_PATH:-}" ] && [ "$type_name" = "${RELEASE_HUB_WORKTREE_TYPE:-}" ]; then
         printf '%s' "$RELEASE_HUB_WORKTREE_PATH"
@@ -433,7 +485,31 @@ app_location_for_type() {
 
     raw_location=$(jq -r ".types[\"$type_name\"].location // empty" "$CONFIG_FILE")
     if [ -n "$raw_location" ]; then
-        eval echo "$raw_location"
+        resolved_location=$(eval echo "$raw_location")
+    fi
+
+    if [ -n "$target_id" ] && [ -n "$resolved_location" ] && [ -d "$resolved_location" ]; then
+        branch_name=$(jq -r ".\"$target_id\".Branch[\"$type_name\"] // empty" "$PROJECT_FILE" 2>/dev/null)
+        if [ -n "$branch_name" ] && git -C "$resolved_location" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            branch_worktree=$(git -C "$resolved_location" worktree list --porcelain 2>/dev/null | awk -v wanted_ref="refs/heads/${branch_name}" '
+                /^worktree / { path = substr($0, 10); next }
+                /^branch / {
+                    ref = substr($0, 8)
+                    if (ref == wanted_ref) {
+                        print path
+                        exit
+                    }
+                }
+            ')
+            if [ -n "$branch_worktree" ] && [ -d "$branch_worktree" ]; then
+                printf '%s' "$branch_worktree"
+                return
+            fi
+        fi
+    fi
+
+    if [ -n "$resolved_location" ]; then
+        printf '%s' "$resolved_location"
     fi
 }
 
@@ -565,43 +641,61 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
         # Ekstrak data project HANYA SEKALI
         projects_data=$(jq -r 'to_entries | .[] | "\(.key)|\(.value.Project["Project Name"])"' "$PROJECT_FILE")
         
-        echo "============================================================"
-        echo "🔧 UTILITIES (GLOBAL)"
-        echo "============================================================"
-        echo "A) Record Playwright UI"
-        echo "B) Download Play Store Metadata"
-        echo "C) Download App Store Metadata"
-        echo "D) Create New Project"
-        echo "E) Upload Google Drive (File Bebas)"
-        echo "F) Submit Testflight (File IPA)"
-        echo "G) Upload Appstore (File IPA)"
-        echo "H) Submit Appstore Review (Bundle ID)"
-        echo "I) Submit Playstore (File AAB)"
-        echo "J) Import Project from Branch (Reverse Setup)"
-        echo "K) Login Google Drive"
-        echo "L) Push Metadata (App Store) Manual"
-        echo "M) Login Fastlane (App Store Connect)"
-        echo "N) Download & Process Icon"
-        echo "============================================================"
-        echo "📋 DAFTAR PROJECT"
-        echo "============================================================"
-        
         # Simpan keys dalam array map index -> project_id
         declare -a PROJ_MAP
         no=1
-        while IFS="|" read -r pid pname; do
-            printf "%-3s %-20s %s\n" "$no)" "$pid" "$pname"
-            PROJ_MAP[$no]="$pid"
-            ((no++))
-        done <<< "$projects_data"
         
-        echo "------------------------------------------------------------"
         if [ -n "$MENU_CHOICE" ]; then
             project_input="$MENU_CHOICE"
             echo "Pilihan otomatis (dari argumen): $project_input"
+            # Populate PROJ_MAP silently
+            while IFS="|" read -r pid pname; do
+                PROJ_MAP[$no]="$pid"
+                ((no++))
+            done <<< "$projects_data"
         else
-            echo -n "Masukkan nomor project (misal: 2 4 5), 'all', atau opsi utilities (A/B/C/D/E/F/G/H/I/J/K/L/M/N): "
-            read -r project_input
+            SELECTOR_INPUT=$(mktemp)
+            cat << 'EOF' > "$SELECTOR_INPUT"
+[Menu] A) Record Playwright UI (Play Store Console)
+[Menu] B) Download Play Store Metadata
+[Menu] C) Download App Store Metadata
+[Menu] D) Create New Project
+[Menu] E) Upload Google Drive (File Bebas)
+[Menu] F) Submit Testflight (File IPA)
+[Menu] G) Upload Appstore (File IPA)
+[Menu] H) Submit Appstore Review (Bundle ID)
+[Menu] I) Submit Playstore (File AAB)
+[Menu] J) Import Project from Branch (Reverse Setup)
+[Menu] K) Login Google Drive
+[Menu] L) Push Metadata (App Store) Manual
+[Menu] M) Login Fastlane (App Store Connect)
+[Menu] N) Download & Process Icon
+[Menu] O) Record Playwright UI (App Store Connect)
+[Menu] P) Edit Project
+EOF
+            while IFS="|" read -r pid pname; do
+                printf "[Project] %-3s %-20s %s\n" "$no)" "$pid" "$pname" >> "$SELECTOR_INPUT"
+                PROJ_MAP[$no]="$pid"
+                ((no++))
+            done <<< "$projects_data"
+            
+            SELECTOR_OUTPUT=$(mktemp)
+            python3 "${SCRIPT_DIR}/scripts/multi_selector.py" "$SELECTOR_INPUT" "$SELECTOR_OUTPUT"
+            SELECTED_OUTPUT=$(cat "$SELECTOR_OUTPUT")
+            rm -f "$SELECTOR_INPUT" "$SELECTOR_OUTPUT"
+            
+            project_input=""
+            MENU_SEL=$(echo "$SELECTED_OUTPUT" | grep '^\[Menu\]' | head -n 1 | sed -E 's/^\[Menu\] ([A-Za-z]).*/\1/')
+            if [ -n "$MENU_SEL" ]; then
+                project_input="$MENU_SEL"
+            else
+                PROJ_SEL=$(echo "$SELECTED_OUTPUT" | grep '^\[Project\]' | awk '{print $2}' | tr -d ')')
+                project_input=$(echo "$PROJ_SEL" | tr '\n' ' ' | xargs)
+            fi
+            
+            if [ -n "$project_input" ]; then
+                echo "Pilihan Anda: $project_input"
+            fi
         fi
         
         if [ -z "$project_input" ]; then
@@ -610,17 +704,14 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
         fi
 
         if [[ "$project_input" =~ ^[Aa]$ ]]; then
-            echo "============================================================"
-            echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
-            echo "============================================================"
-            cd "${SCRIPT_DIR}/automation" || exit 1
-            if [ ! -d "node_modules" ]; then
-                echo "📦 Menginstal dependensi automation (Playwright)..."
-                npm install
-                npx playwright install chromium
+            if [ "$DRY_RUN" = true ]; then
+                echo "🧪 DRY RUN - would run: npm run record:playstore"
+                exit 0
             fi
-            echo "🎥 Membuka Playwright Inspector..."
-            npm run record
+            ensure_playwright_deps
+            cd "${SCRIPT_DIR}/automation" || exit 1
+            echo "🎥 Membuka Playwright Inspector - Play Store Console..."
+            npm run record:playstore
             exit 0
         elif [[ "$project_input" =~ ^[Bb]$ ]]; then
             ruby "${SCRIPT_DIR}/scripts/download_playstore_metadata.rb"
@@ -642,7 +733,19 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
             read -p "8. Base Nama Aplikasi (misal 'ZPP', otomatis ditambah suffix) [${APP_NAME}]: " IN_APP_NAME; APP_NAME="${IN_APP_NAME:-$APP_NAME}"
             read -p "9. Firebase Project (misal: hashmicro-production-17, kosongkan jika tidak ada) [${FIREBASE_PROJECT}]: " IN_FIREBASE_PROJECT; FIREBASE_PROJECT="${IN_FIREBASE_PROJECT:-$FIREBASE_PROJECT}"
             read -p "10. Icon (URL GDrive / Path Lokal, kosongkan jika belum ada) [${ICON}]: " IN_ICON; ICON="${IN_ICON:-$ICON}"
-            exec "$0" --project "$PROJECT" --region "$REGION" --app-name "$APP_NAME" --type "$TYPE" --base-url "$BASE_URL" --database "$DATABASE" --icon "$ICON" --project-key "$PROJECT_KEY" --branch-name "$BRANCH_NAME" --firebase-project "$FIREBASE_PROJECT"
+            create_project_args=(
+                --project "$PROJECT"
+                --region "$REGION"
+                --app-name "$APP_NAME"
+                --type "$TYPE"
+                --base-url "$BASE_URL"
+                --database "$DATABASE"
+                --project-key "$PROJECT_KEY"
+                --branch-name "$BRANCH_NAME"
+            )
+            if [ -n "$ICON" ]; then create_project_args+=(--icon "$ICON"); fi
+            if [ -n "$FIREBASE_PROJECT" ]; then create_project_args+=(--firebase-project "$FIREBASE_PROJECT"); fi
+            exec "$0" "${create_project_args[@]}"
         elif [[ "$project_input" =~ ^[Ee]$ ]]; then
             echo "============================================================"
             echo "📁 UPLOAD GOOGLE DRIVE (FILE BEBAS)"
@@ -792,6 +895,49 @@ if [ ${#SELECTED_TARGETS[@]} -eq 0 ] && [ -z "$PROJECT" ]; then
             bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_INPUT"
             echo "✅ Hasil disimpan di icon/"
             exit 0
+        elif [[ "$project_input" =~ ^[Oo]$ ]]; then
+            if [ "$DRY_RUN" = true ]; then
+                echo "🧪 DRY RUN - would run: npm run record:appstore"
+                exit 0
+            fi
+            ensure_playwright_deps
+            cd "${SCRIPT_DIR}/automation" || exit 1
+            echo "🎥 Membuka Playwright Inspector - App Store Connect..."
+            npm run record:appstore
+            exit 0
+        elif [[ "$project_input" =~ ^[Pp]$ ]]; then
+            echo "============================================================"
+            echo "📝 EDIT PROJECT"
+            echo "============================================================"
+            read -p "Masukkan ID Project yang akan diedit (contoh: smkgemanusantara): " TARGET_PROJECT
+            
+            if [ -z "$TARGET_PROJECT" ]; then
+                echo "❌ ID Project tidak boleh kosong."
+                exit 1
+            fi
+            
+            if ! jq -e ".\"$TARGET_PROJECT\"" "$PROJECT_FILE" > /dev/null 2>&1; then
+                echo "❌ Project '$TARGET_PROJECT' tidak ditemukan di projects.json."
+                exit 1
+            fi
+            
+            TMP_JSON=$(mktemp)
+            jq ".\"$TARGET_PROJECT\"" "$PROJECT_FILE" > "$TMP_JSON"
+            
+            # Gunakan nano atau editor bawaan
+            ${EDITOR:-nano} "$TMP_JSON"
+            
+            # Validasi JSON
+            if jq -e . "$TMP_JSON" > /dev/null 2>&1; then
+                TMP_PROJECTS=$(mktemp)
+                jq --arg key "$TARGET_PROJECT" --argjson newProj "$(<"$TMP_JSON")" '.[$key] = $newProj' "$PROJECT_FILE" > "$TMP_PROJECTS"
+                mv "$TMP_PROJECTS" "$PROJECT_FILE"
+                echo "✅ Project '$TARGET_PROJECT' berhasil diupdate!"
+            else
+                echo "❌ Error: Format JSON tidak valid. Perubahan dibatalkan."
+            fi
+            rm -f "$TMP_JSON"
+            exit 0
         fi
 
         
@@ -884,36 +1030,6 @@ fi
                 fi
             fi
         done
-        tput clear
-                                echo "============================================================"
-                echo "🛠️ PILIH AKSI UNTUK: ${#SELECTED_TARGETS[@]} Project(s) Terpilih"
-                echo "============================================================"
-                echo " 1) Setup Konfigurasi"
-                echo " 2) Change Icon"
-                echo " 3) Rebrand Package Name/Bundle ID"
-                echo " 4) Bump Version"
-                echo " 5) Clean & Pod Install"
-                echo " 6) Update Play Console Dashboard ID"
-                echo " 7) Full Deploy iOS (Otomatis jalankan 8-15)"
-                echo " 8) Create Appstore"
-                echo " 9) Push Metadata (App Store)"
-                echo "10) Complete Appstore Info"
-                echo "11) Build IPA"
-                echo "12) Upload IPA & Submit Testflight"
-                echo "13) Submit Testflight (Tanpa Upload)"
-                echo "14) Submit Appstore Review"
-                echo "15) Request Unlisted Distribution"
-                echo "16) Full Deploy Android (Otomatis jalankan 17-24)"
-                echo "17) Create Playstore"
-                echo "18) Setup Playstore Info"
-                echo "19) Upload Playstore Listing"
-                echo "20) Build APK"
-                echo "21) Upload to Google Drive (APK)"
-                echo "22) Build AAB"
-                echo "23) Upload Playstore (AAB)"
-                echo "24) Submit Playstore (Playwright UI)"
-                echo "25) Download & Process Icon"
-                echo "------------------------------------------------------------"
                 if [ -n "$ACTION_CHOICE" ]; then
                     action_choice="$ACTION_CHOICE"
                     echo "Pilihan otomatis (dari argumen): $action_choice"
@@ -922,8 +1038,47 @@ fi
                     echo "Contoh: release $TARGET_ID -a '22' --app-type 'HRM Apps'"
                     exit 1
                 else
-                    echo -n "Pilihan Anda (pisahkan dengan spasi/koma, misal: 1 22 23): "
-                    read -r action_choice
+                    ACTION_SELECTOR_INPUT=$(mktemp)
+                    cat << 'EOF' > "$ACTION_SELECTOR_INPUT"
+ 1) Setup Konfigurasi
+ 2) Change Icon
+ 3) Rebrand Package Name/Bundle ID
+ 4) Bump Version
+ 5) Clean & Pod Install
+ 6) Update Play Console Dashboard ID
+ 7) Full Deploy iOS (Otomatis jalankan 8-15)
+ 8) Create Appstore
+ 9) Push Metadata (App Store)
+10) Complete Appstore Info
+11) Build IPA
+12) Upload IPA & Submit Testflight
+13) Submit Testflight (Tanpa Upload)
+14) Submit Appstore Review
+15) Request Unlisted Distribution
+16) Full Deploy Android (Otomatis jalankan 17-24)
+17) Create Playstore
+18) Setup Playstore Info
+19) Upload Playstore Listing
+20) Build APK
+21) Upload to Google Drive (APK)
+22) Build AAB
+23) Upload Playstore (AAB)
+24) Submit Playstore (Playwright UI)
+25) Download & Process Icon
+EOF
+                    ACTION_SELECTOR_OUTPUT=$(mktemp)
+                    python3 "${SCRIPT_DIR}/scripts/multi_selector.py" "$ACTION_SELECTOR_INPUT" "$ACTION_SELECTOR_OUTPUT"
+                    SELECTED_ACTIONS=$(cat "$ACTION_SELECTOR_OUTPUT")
+                    rm -f "$ACTION_SELECTOR_INPUT" "$ACTION_SELECTOR_OUTPUT"
+                    
+                    action_choice=""
+                    if [ -n "$SELECTED_ACTIONS" ]; then
+                        action_choice=$(echo "$SELECTED_ACTIONS" | awk -F')' '{print $1}' | tr -d ' ' | tr '\n' ' ' | xargs)
+                    fi
+                    
+                    if [ -n "$action_choice" ]; then
+                        echo "Aksi terpilih: $action_choice"
+                    fi
                 fi
 
 
@@ -1139,22 +1294,13 @@ if [ "$DRY_RUN" = true ]; then
 fi
 
 # Global setup untuk Playwright
-if [[ " ${ACTION_ARRAY[*]} " =~ " 6 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 16 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 17 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 18 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 19 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 24 " ]]; then
-    echo "============================================================"
-    echo "📦 MENYIAPKAN DEPENDENSI AUTOMASI (Playwright)"
-    echo "============================================================"
-    cd "${SCRIPT_DIR}/automation" || exit 1
-    if [ ! -d "node_modules" ]; then
-        echo "📦 Menginstal dependensi automation (Playwright)..."
-        npm install
-        npx playwright install chromium
-    fi
+if [[ " ${ACTION_ARRAY[*]} " =~ " 6 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 7 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 10 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 15 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 16 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 17 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 18 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 19 " ]] || [[ " ${ACTION_ARRAY[*]} " =~ " 24 " ]]; then
+    ensure_playwright_deps
     
     if [ ! -d "${SCRIPT_DIR}/credentials/.chrome_profile" ]; then
         echo "⚠️ Profil Chrome (Login Play Console) belum ditemukan."
-        npm run auth
+        (cd "${SCRIPT_DIR}/automation" && npm run auth)
     fi
-    cd "${SCRIPT_DIR}" || exit 1
 fi
 
 upload_drive() {
@@ -1295,7 +1441,7 @@ execute_action() {
                        bash "${SCRIPT_DIR}/scripts/prepare-icon.sh" "$ICON_URL"
                    fi
                    
-                   APP_LOCATION=$(app_location_for_type "$PRIMARY_TYPE")
+                   APP_LOCATION=$(app_location_for_type "$PRIMARY_TYPE" "$TARGET_ID")
                    OPTIMIZED_ICON="${SCRIPT_DIR}/icon/icon.png"
                    if [ -n "$APP_LOCATION" ] && [ -d "$APP_LOCATION" ] && [ -f "$OPTIMIZED_ICON" ]; then
                        echo "  🖼️  Menerapkan icon kustom ke project $APP_LOCATION..."
@@ -1325,7 +1471,7 @@ execute_action() {
                    ;;
                 4) RELEASE_HUB_WORKTREE_TYPE="${RELEASE_HUB_WORKTREE_TYPE:-}" RELEASE_HUB_WORKTREE_PATH="${RELEASE_HUB_WORKTREE_PATH:-}" ruby "${SCRIPT_DIR}/scripts/bump_version.rb" "$TARGET_ID" "$type_clean" || echo "❌ bump_version.rb gagal dijalankan." ;;
                 5) 
-                   APP_LOCATION=$(app_location_for_type "$PRIMARY_TYPE")
+                   APP_LOCATION=$(app_location_for_type "$PRIMARY_TYPE" "$TARGET_ID")
                    if [ -z "$APP_LOCATION" ] || [ ! -d "$APP_LOCATION" ]; then
                        echo "❌ Folder project untuk tipe $PRIMARY_TYPE tidak ditemukan ($APP_LOCATION)"
                        exit 1

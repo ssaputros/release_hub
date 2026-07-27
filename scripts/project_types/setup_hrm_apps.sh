@@ -18,6 +18,11 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &> /dev/null && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/config.json"
+GIT_WORKTREE_HELPERS="${SCRIPT_DIR}/scripts/git_worktree_helpers.sh"
+if [ -f "$GIT_WORKTREE_HELPERS" ]; then
+    # shellcheck source=/dev/null
+    source "$GIT_WORKTREE_HELPERS"
+fi
 
 echo "⚙️ SETUP PROJECT HRM"
 
@@ -41,6 +46,14 @@ fi
 FIREBASE_PROJECT_ID=$(jq -r ".\"$ID\".\"Firebase Project\" // empty" "${SCRIPT_DIR}/projects.json" 2>/dev/null)
 if [ -z "$FIREBASE_PROJECT_ID" ]; then
     FIREBASE_PROJECT_ID=$(jq -r ".firebase_project // empty" "$CONFIG_FILE")
+fi
+
+# Use the configured branch mapping when it differs from the project key.
+# This lets staging/live project entries share one customer branch while keeping
+# separate Release Hub targets for their environment values.
+BRANCH_NAME=$(jq -r ".\"$ID\".Branch[\"$TYPE\"] // empty" "${SCRIPT_DIR}/projects.json" 2>/dev/null)
+if [ -z "$BRANCH_NAME" ] || [ "$BRANCH_NAME" = "null" ]; then
+    BRANCH_NAME="$ID"
 fi
 
 if [ ! -d "$LOCATION" ]; then
@@ -71,27 +84,43 @@ echo "  🌿 Stable Branch: $STABLE_BRANCH"
 git fetch origin >/dev/null 2>&1
 
 BRANCH_EXISTS="false"
-if git show-ref --verify --quiet "refs/heads/$ID" || git ls-remote --heads origin "$ID" | grep -q "$ID"; then
+if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME" || git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
     BRANCH_EXISTS="true"
 fi
 
 if [ "$BRANCH_EXISTS" == "true" ]; then
-    echo "  🚀 Project Exist! Pindah ke branch '$ID'..."
-    if ! git checkout "$ID" >/dev/null 2>&1; then
-        echo "  ❌ Error: Gagal pindah ke branch '$ID'. Harap commit/stash perubahan Anda."
-        exit 1
+    echo "  🚀 Project Exist! Pindah ke branch '$BRANCH_NAME'..."
+    if command -v git_checkout_or_use_worktree >/dev/null 2>&1; then
+        if ! git_checkout_or_use_worktree "$BRANCH_NAME"; then
+            echo "  ❌ Harap commit/stash perubahan Anda atau gunakan --worktree-path ke worktree branch '$BRANCH_NAME'."
+            exit 1
+        fi
+        LOCATION=$(pwd)
+        echo "  📍 Lokasi aktif: $LOCATION"
+        git_pull_current_branch "$BRANCH_NAME"
+    else
+        if ! git checkout "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "  ❌ Error: Gagal pindah ke branch '$BRANCH_NAME'. Harap commit/stash perubahan Anda."
+            exit 1
+        fi
+        git pull origin "$BRANCH_NAME" >/dev/null 2>&1
     fi
-    git pull origin "$ID" >/dev/null 2>&1
 else
-    echo "  🆕 Project Baru! Membuat branch '$ID' dari '$STABLE_BRANCH'..."
-    if ! git checkout "$STABLE_BRANCH" >/dev/null 2>&1; then
-        echo "  ❌ Error: Gagal pindah ke branch '$STABLE_BRANCH'. Harap commit/stash perubahan Anda."
-        exit 1
-    fi
-    git pull origin "$STABLE_BRANCH" >/dev/null 2>&1
-    if ! git checkout -b "$ID" >/dev/null 2>&1; then
-        echo "  ❌ Error: Gagal membuat branch baru '$ID'."
-        exit 1
+    echo "  🆕 Project Baru! Membuat branch '$BRANCH_NAME' dari '$STABLE_BRANCH'..."
+    if command -v git_create_branch_from_base >/dev/null 2>&1; then
+        if ! git_create_branch_from_base "$BRANCH_NAME" "$STABLE_BRANCH"; then
+            exit 1
+        fi
+    else
+        if ! git checkout "$STABLE_BRANCH" >/dev/null 2>&1; then
+            echo "  ❌ Error: Gagal pindah ke branch '$STABLE_BRANCH'. Harap commit/stash perubahan Anda."
+            exit 1
+        fi
+        git pull origin "$STABLE_BRANCH" >/dev/null 2>&1
+        if ! git checkout -b "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "  ❌ Error: Gagal membuat branch baru '$BRANCH_NAME'."
+            exit 1
+        fi
     fi
 fi
 
@@ -223,8 +252,8 @@ if git diff-index --quiet HEAD --; then
     echo "  ℹ️ Tidak ada perubahan yang perlu di-commit."
 else
     git commit -m "chore: auto-setup branding for $APP_NAME ($ID)" >/dev/null 2>&1
-    git push origin "$ID" >/dev/null 2>&1
-    echo "  ✅ Berhasil push konfigurasi ke branch '$ID'."
+    git push origin "$BRANCH_NAME" >/dev/null 2>&1
+    echo "  ✅ Berhasil push konfigurasi ke branch '$BRANCH_NAME'."
 fi
 
 echo "  ✅ Setup HRM selesai."

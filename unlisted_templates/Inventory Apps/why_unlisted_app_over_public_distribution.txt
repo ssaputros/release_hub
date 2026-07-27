@@ -1,0 +1,3 @@
+We prefer unlisted app distribution over public distribution on the App Store because the app is designed for internal operational use by a specific organization and is not intended for the general public. Public listing could expose the app to unintended users, create confusion, and increase the risk of unauthorized access attempts.
+
+Unlisted distribution allows us to keep the app discoverable only through a direct link shared with authorized employees and stakeholders. This provides a better balance between App Store availability and controlled access for the intended audience.

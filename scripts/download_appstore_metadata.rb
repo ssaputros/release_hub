@@ -7,6 +7,7 @@ require 'fastlane'
 require 'deliver'
 require 'deliver/options'
 require 'fastlane_core'
+require_relative 'app_store_connect_auth_helper'
 
 # 1. Path definitions
 script_dir = __dir__
@@ -165,8 +166,6 @@ end
 
 # 4. Authenticate Setup
 issuer_id = ENV['ASC_ISSUER_ID']
-key_id = ENV['ASC_KEY_ID']
-key_filepath = ENV['ASC_KEY_FILE']
 apple_id = ENV['APPLE_ID_USERNAME']
 
 if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
@@ -176,14 +175,7 @@ if (issuer_id.nil? || issuer_id.empty?) && (apple_id.nil? || apple_id.empty?)
 end
 
 using_api_key = !(issuer_id.nil? || issuer_id.empty?)
-
-if using_api_key
-  key_filepath = File.expand_path("../#{key_filepath}", script_dir)
-  if !File.exist?(key_filepath)
-    puts "❌ File API Key tidak ditemukan di: #{key_filepath}"
-    exit 1
-  end
-end
+key_filepath = AppStoreConnectAuthHelper.resolve_api_key_path(project_root: project_root) if using_api_key
 
 # 5. Build Deliver Options
 options = {
@@ -205,48 +197,44 @@ else
 end
 
 begin
+  AppStoreConnectAuthHelper.ensure_authenticated!(
+    context: "Download App Store Metadata #{bundle_id}",
+    project_root: project_root
+  )
+
   config = FastlaneCore::Configuration.create(Deliver::Options.available_options, options)
-  
+
   puts "⏳ Menghubungkan ke App Store Connect dan mendownload metadata serta screenshots..."
-  
-  # Jalankan download dalam thread agar responsive
-  download_thread = Thread.new do
-    # Inisialisasi runner untuk login dan mengisi cache
-    Deliver::Runner.new(config)
-    
-    # Ambil app ter-cache dan versi terbaru
-    require 'deliver/setup'
-    app = Deliver.cache[:app]
-    platform = Spaceship::ConnectAPI::Platform.map(config[:platform])
-    v = app.get_latest_app_store_version(platform: platform)
-    
-    if v.nil?
-      raise "Tidak ada versi App Store yang ditemukan untuk aplikasi ini."
+
+  AppStoreConnectAuthHelper.with_auth_retry(
+    context: "Download App Store Metadata #{bundle_id}",
+    project_root: project_root
+  ) do
+    AppStoreConnectAuthHelper.run_with_spinner('Mendownload metadata') do
+      # Inisialisasi runner untuk login dan mengisi cache
+      Deliver::Runner.new(config)
+
+      # Ambil app ter-cache dan versi terbaru
+      require 'deliver/setup'
+      app = Deliver.cache[:app]
+      platform = Spaceship::ConnectAPI::Platform.map(config[:platform])
+      v = app.get_latest_app_store_version(platform: platform)
+
+      if v.nil?
+        raise "Tidak ada versi App Store yang ditemukan untuk aplikasi ini."
+      end
+
+      # Unduh file metadata lokal
+      Deliver::Setup.new.generate_metadata_files(app, v, metadata_ios_path, config)
+
+      # Unduh screenshots
+      require 'deliver/download_screenshots'
+      screenshots_path = config[:screenshots_path]
+      FileUtils.mkdir_p(screenshots_path) unless File.directory?(screenshots_path)
+      Deliver::DownloadScreenshots.run(config, screenshots_path)
     end
-    
-    # Unduh file metadata lokal
-    Deliver::Setup.new.generate_metadata_files(app, v, metadata_ios_path, config)
-    
-    # Unduh screenshots
-    require 'deliver/download_screenshots'
-    screenshots_path = config[:screenshots_path]
-    FileUtils.mkdir_p(screenshots_path) unless File.directory?(screenshots_path)
-    Deliver::DownloadScreenshots.run(config, screenshots_path)
   end
-  
-  spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-  i = 0
-  start_time = Time.now
-  while download_thread.alive?
-    elapsed = (Time.now - start_time).to_i
-    mins = elapsed / 60
-    secs = elapsed % 60
-    print "\r⏳ #{spinner[i % spinner.length]} Mendownload metadata... (Waktu berlalu: #{mins}m #{secs}s)   "
-    i += 1
-    sleep 0.2
-  end
-  
-  download_thread.join
+
   puts "\n\n✅ Download App Store Metadata selesai dengan sukses!"
   puts "📁 Hasil disimpan di: #{metadata_ios_path}"
 rescue => ex

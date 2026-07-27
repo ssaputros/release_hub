@@ -52,7 +52,9 @@ const steps = stepNames.map(name => ({
 }));
 
 (async () => {
-  const profileDir = path.join(__dirname, '../credentials/.chrome_profile');
+  const profileDir = process.env.PLAYWRIGHT_CHROME_PROFILE_DIR
+    ? path.resolve(process.env.PLAYWRIGHT_CHROME_PROFILE_DIR)
+    : path.join(__dirname, '../credentials/.chrome_profile');
 
   if (!fs.existsSync(profileDir)) {
     console.error("❌ Profil Chrome tidak ditemukan. Harap login terlebih dahulu.");

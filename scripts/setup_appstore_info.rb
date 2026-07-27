@@ -2,6 +2,7 @@
 
 require 'json'
 require 'fileutils'
+require_relative 'app_store_connect_auth_helper'
 
 begin
   require 'spaceship'
@@ -66,13 +67,21 @@ puts "------------------------------------------------------------"
 
 puts "⏳ Menghubungkan ke App Store Connect..."
 begin
-  Spaceship::ConnectAPI.login
+  AppStoreConnectAuthHelper.ensure_authenticated!(
+    context: "Setup App Store Info #{app_name || bundle_id}",
+    project_root: project_root
+  )
 rescue => e
   puts "❌ Gagal login ke App Store Connect: #{e.message}"
   exit 1
 end
 
-app = Spaceship::ConnectAPI::App.find(bundle_id)
+app = AppStoreConnectAuthHelper.with_auth_retry(
+  context: "Setup App Store Info #{app_name || bundle_id}",
+  project_root: project_root
+) do
+  Spaceship::ConnectAPI::App.find(bundle_id)
+end
 
 unless app
   puts "❌ Aplikasi dengan Bundle ID '#{bundle_id}' tidak ditemukan di App Store Connect."

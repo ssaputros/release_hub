@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: ads.js");
 
@@ -10,7 +11,7 @@ module.exports = async function(page, appData) {
     
     await page.getByRole('radio', { name: 'No, my app does not contain' }).check();
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(2000);
+    await waitAfterSave(page, 'ads');
     await page.getByRole('link', { name: 'Go back to Dashboard' }).click();
 
     // 2. Beri jeda sebentar untuk menunggu render atau proses save.

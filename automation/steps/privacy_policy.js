@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: privacy_policy.js");
 
@@ -11,7 +12,7 @@ module.exports = async function(page, appData) {
     await page.getByRole('textbox', { name: 'Privacy policy URL' }).click();
     await page.getByRole('textbox', { name: 'Privacy policy URL' }).fill('https://hashmicro.com/privacy-policy');
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.waitForTimeout(2000);
+    await waitAfterSave(page, 'privacy policy');
     await page.getByRole('link', { name: 'Go back to Dashboard' }).click();
 
 

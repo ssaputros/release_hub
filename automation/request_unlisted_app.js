@@ -35,10 +35,12 @@ const appType = process.argv[4] || "HRM Apps";
 
     const context = await chromium.launchPersistentContext(userDataDir, {
         headless: false,
+        channel: 'chrome',
         viewport: null, // Fullscreen or default
-        args: ['--start-maximized'],
+        args: ['--start-maximized', '--disable-blink-features=AutomationControlled'],
+        ignoreDefaultArgs: ['--enable-automation'],
         // Set timeout yang lama untuk menunggu input manual jika perlu
-        timeout: 120000 
+        timeout: 120000
     });
 
     const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
@@ -141,7 +143,12 @@ const appType = process.argv[4] || "HRM Apps";
     console.log('========================================================================\n');
 
     // Klik tombol submit
-    await page.getByRole('button', { name: 'Submit' }).click().catch(() => {});
+    console.log('-> Menekan tombol Submit...');
+    try {
+        await page.getByRole('button', { name: 'Submit' }).click();
+    } catch (e) {
+        console.log(`⚠️ Gagal menekan tombol submit secara otomatis, silakan klik manual: ${e.message}`);
+    }
     
     // Verifikasi keberhasilan
     console.log('⏳ Menunggu konfirmasi keberhasilan...');

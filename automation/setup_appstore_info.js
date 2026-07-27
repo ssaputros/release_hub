@@ -37,39 +37,37 @@ const appName = process.argv[3] || "My App";
         });
 
         const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
-        // Set default timeout yang panjang untuk mentoleransi loading SPA Apple
-        page.setDefaultTimeout(15000);
+        // Jangan pasang timeout global untuk App Store Connect.
+        // Halaman ASC adalah SPA berat dan sering tidak pernah mencapai networkidle.
+        page.setDefaultTimeout(0);
+        page.setDefaultNavigationTimeout(0);
         
         const loginUrl = 'https://appstoreconnect.apple.com/login';
         console.log(`🌐 Membuka ${loginUrl} untuk otentikasi...`);
-        await page.goto(loginUrl, { waitUntil: 'networkidle' });
+        await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 0 });
         
         console.log('⏳ Menunggu Anda mendarat di beranda (Dashboard App Store)...');
-        console.log('⏳ Jika layar meminta login, silakan isi manual (skrip menunggu hingga 2 menit).');
-        try {
-            // Tunggu sampai URL menunjuk ke appstoreconnect.apple.com dan bukan di halaman /login
-            // Ini akan mencakup /, /apps, atau halaman internal lainnya setelah login berhasil
-            await page.waitForURL((url) => {
-                return url.hostname === 'appstoreconnect.apple.com' && !url.pathname.includes('/login');
-            }, { timeout: 120000 });
-            console.log('✅ Login berhasil dideteksi!');
-        } catch (e) {
-            console.log('❌ Waktu login manual habis (timeout) atau gagal terdeteksi.');
-        }
+        console.log('⏳ Jika layar meminta login, silakan isi manual. Skrip akan menunggu tanpa timeout.');
+        // Tunggu sampai URL menunjuk ke appstoreconnect.apple.com dan bukan di halaman /login.
+        // Ini akan mencakup /, /apps, atau halaman internal lainnya setelah login berhasil.
+        await page.waitForURL((url) => {
+            return url.hostname === 'appstoreconnect.apple.com' && !url.pathname.includes('/login');
+        }, { timeout: 0 });
+        console.log('✅ Login berhasil dideteksi!');
 
         if (appleId) {
             const targetUrl = `https://appstoreconnect.apple.com/apps/${appleId}/distribution/info`;
             console.log(`➡️ Melanjutkan navigasi ke ${targetUrl} ...`);
-            await page.goto(targetUrl, { waitUntil: 'networkidle' });
+            await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 0 });
             
             console.log('⏳ Menunggu halaman pengaturan termuat...');
-            await page.waitForSelector('text=App Privacy', { timeout: 30000 });
+            await page.waitForSelector('text=App Privacy', { timeout: 0 });
         }
         
         console.log("⚙️ Mengisi Content Rights & Age Ratings...");
         try {
             await page.getByRole('button', { name: 'Set Up Content Rights' }).click();
-            await page.locator('.modal-body___1Ci0U > div > div:nth-child(2) > div').click();
+            await page.getByRole('radio', { name: 'No, it does not contain, show' }).check();
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             
             await page.getByRole('button', { name: 'Set Up Age Ratings' }).click();

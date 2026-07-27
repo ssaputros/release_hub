@@ -1,3 +1,4 @@
+const { waitAfterSave } = require('./_helpers');
 module.exports = async function(page, appData) {
     console.log("⏳ Memulai eksekusi step: government_apps.js");
      
@@ -9,10 +10,7 @@ module.exports = async function(page, appData) {
     await entryBtn.click();
     await page.getByRole('radio', { name: 'No' }).check();
     await page.getByRole('button', { name: 'Save' }).click();
-    
-    // Tunggu proses save di background selesai
-    await page.waitForTimeout(2000);
-    
+    await waitAfterSave(page, 'government apps');
     await page.getByRole('link', { name: 'Go back to Dashboard' }).click();
 
     // 2. Beri jeda sebentar untuk menunggu render atau proses save.

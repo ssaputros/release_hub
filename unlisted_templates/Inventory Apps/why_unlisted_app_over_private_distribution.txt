@@ -1,0 +1,3 @@
+We prefer unlisted app distribution over private distribution via Apple Business Manager or Apple School Manager because the app is intended for a specific organization and needs a simple, flexible sharing method through a direct App Store link. This avoids the additional administrative setup required for private distribution while still keeping the app hidden from public App Store search and browsing.
+
+For this use case, unlisted distribution provides a streamlined approach for authorized users to install the app without managing Apple Business Manager organization assignments or complex deployment configuration.

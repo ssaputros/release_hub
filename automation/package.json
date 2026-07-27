@@ -5,7 +5,9 @@
   "main": "auth.js",
   "scripts": {
     "auth": "node auth.js",
-    "record": "node record.js"
+    "record": "node record.js playstore",
+    "record:playstore": "node record.js playstore",
+    "record:appstore": "node record.js appstore"
   },
   "dependencies": {
     "playwright": "^1.44.0"
