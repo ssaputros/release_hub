@@ -318,8 +318,7 @@
       "Database": "pancaran-live",
       "Icon": ""
     },
-    "Play Console Dashboard": {
-    },
+    "Play Console Dashboard": {},
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.pancaran"
     },
@@ -654,15 +653,23 @@
     },
     "Firebase Project": "",
     "Project": {
-      "Project Name": "Sunindo",
+      "Project Name": "PT Sunindo Pratama Tbk",
       "Region": "Indonesia",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
+      "Localization": "Indonesia",
       "App Name": {
-        "HRM Apps": "Sunindo HRIS"
+        "HRM Apps": "Sunindo Group HRIS"
       },
       "Type": "HRM Apps",
-      "Base URL": "https://suni-rtm-psm-dev.hash-022.com",
-      "Database": "suni-rtm-psm-clean",
-      "Icon": ""
+      "Base URL": "https://suni-rtm-psm.hashmicro.co",
+      "Database": "suni-rtm-psm-live",
+      "Icon": "",
+      "Cutoff Date": "2025-04-30",
+      "Target build .apk": "2026-07-31",
+      "Target Release Google Playstore and Apps Store": "2026-07-31",
+      "Hide Menu": "Career Transition\nTraining\nLMS\nField Coach\nSignature\nSalary Increment"
     },
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.sunindo"
@@ -850,28 +857,33 @@
   },
   "arkempiresdnbhd": {
     "Branch": {
-      "HRM Apps": "arkempiresdnbhd"
+      "HRM Apps": "arkempiresdnbhd",
+      "CRM Apps": "arkempiresdnbhd"
     },
     "Play Console Dashboard": {
-      "HRM Apps": "4972888138027119786"
+      "HRM Apps": "4972888138027119786",
+      "CRM Apps": ""
     },
     "Firebase Project": "",
     "Project": {
       "Project Name": "ARK EMPIRE SDN BHD",
       "Region": "Malaysia",
       "App Name": {
-        "HRM Apps": "ARK HR"
+        "HRM Apps": "ARK HR",
+        "CRM Apps": "ARK CRM"
       },
-      "Type": "HRM Apps",
+      "Type": "HRM Apps, CRM Apps",
       "Base URL": "https://arkempire.hash-006.com",
       "Database": "arkempire-live-0904",
       "Icon": "https://drive.google.com/open?id=1VMyV0gmI8xWQ0a1kjq6fR0TkpOBlpV_i"
     },
     "Package ID": {
-      "HRM Apps": "com.hashmicro.eva.arkempiresdnbhd"
+      "HRM Apps": "com.hashmicro.eva.arkempiresdnbhd",
+      "CRM Apps": "com.hashmicro.crm.arkempiresdnbhd"
     },
     "Bundle ID": {
-      "HRM Apps": "com.hashmicro.eva.arkempiresdnbhd"
+      "HRM Apps": "com.hashmicro.eva.arkempiresdnbhd",
+      "CRM Apps": "com.hashmicro.crm.arkempiresdnbhd"
     }
   },
   "samalshores": {
@@ -920,8 +932,7 @@
       "Database": "brentvalecollege-live",
       "Icon": ""
     },
-    "Play Console Dashboard": {
-    },
+    "Play Console Dashboard": {},
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.bci"
     },
@@ -944,8 +955,7 @@
       "Database": "globalmultipro",
       "Icon": ""
     },
-    "Play Console Dashboard": {
-    },
+    "Play Console Dashboard": {},
     "Package ID": {
       "HRM Apps": "com.hashmicro.eva.gmt"
     },
@@ -976,6 +986,106 @@
     },
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.sdt"
+    }
+  },
+  "demopro": {
+    "Branch": {
+      "HRM Apps": "demopro"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4975428630492936312"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Demo Pro",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Demo Pro HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://demopro.co",
+      "Database": "demopro",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.demopro"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.demopro"
+    }
+  },
+  "exoclinic": {
+    "Project": {
+      "Project Name": "MyEXO",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "MyEXO"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://demopro.co",
+      "Database": "demopro",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.hmx.exoclinic"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.hmx.exoclinic"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4975415809634632101"
+    }
+  },
+  "hmx": {
+    "Branch": {
+      "HRM Apps": "hmx"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Hashmicro X",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "HashMicro X"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://hashmicro.com",
+      "Database": "Hashmicro",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.hmx.dev"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.hmx.dev"
+    }
+  },
+  "adityacitrapersada": {
+    "Branch": {
+      "HMX App": "adityacitrapersada"
+    },
+    "Play Console Dashboard": {
+      "HMX App": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Aditya Citra Persada",
+      "Region": "Indonesia",
+      "App Name": {
+        "HMX App": "HMX Aditya Citra Persada"
+      },
+      "Type": "HMX App",
+      "Base URL": "https://adityacitrapersada.hash-028.com/",
+      "Database": "hmx_adityacitrapersada",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HMX App": "com.hashmicro.hmx.adityacitrapersada"
+    },
+    "Bundle ID": {
+      "HMX App": "com.hashmicro.hmx.adityacitrapersada"
     }
   }
 }
