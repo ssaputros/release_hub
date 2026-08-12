@@ -345,8 +345,7 @@ begin
     sync_screenshots: true,
     skip_binary_upload: true,
     ignore_language_directory_validation: true,
-    force: true,
-    skip_metadata: @skip_metadata_fallback || false
+    force: true
   }
 
   if has_custom_icon && File.exist?(project_icon_path)
@@ -401,14 +400,18 @@ rescue => ex
   if ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")
     if !@app_name_retried
       puts "\n⚠️ Peringatan: Nama aplikasi sudah digunakan (App Name conflict)."
-      puts "⚠️ Apple menolak pembaruan metadata teks. Mencoba mengunggah screenshot saja (skip_metadata)..."
-      @skip_metadata_fallback = true
+      puts "⚠️ Menghapus file name.txt dan mencoba upload metadata lainnya..."
+      
+      Dir.glob(File.join(temp_metadata_dir, "**", "name.txt")).each do |name_file|
+        FileUtils.rm_f(name_file)
+      end
+      
       @app_name_retried = true
       retry
     else
-      puts "\n⚠️ Peringatan: Apple masih menolak pembaruan meskipun hanya mengunggah screenshot."
-      puts "⚠️ Melewati proses upload metadata ke App Store agar pipeline rilis tetap berlanjut..."
-      exit 0
+      puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store (bahkan setelah name.txt dihapus):"
+      puts ex.message
+      exit 1
     end
   else
     puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
