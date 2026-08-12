@@ -735,10 +735,12 @@
   },
   "uitc": {
     "Branch": {
-      "CRM Apps": "uitc-sales"
+      "CRM Apps": "uitc-sales",
+      "Inventory Apps": "UITC-Inventory"
     },
     "Play Console Dashboard": {
-      "CRM Apps": ""
+      "CRM Apps": "",
+      "Inventory Apps": ""
     },
     "Firebase Project": "crm-notification-3",
     "Project": {
@@ -746,20 +748,23 @@
       "Region": "Singapore",
       "Product": "HM3",
       "Platform": "Android, iOS",
-      "Application to be Used": "CRM Apps",
+      "Application to be Used": "CRM Apps, Inventory Apps",
       "App Name": {
-        "CRM Apps": "UITC Sales"
+        "CRM Apps": "UITC Sales",
+        "Inventory Apps": "UITC Inventory"
       },
-      "Type": "CRM Apps",
+      "Type": "CRM Apps, Inventory Apps",
       "Base URL": "https://uicl.hash-013.com",
       "Database": "uicl-score22-sg-db",
       "Icon": "assets/icons/uitc-logo.png"
     },
     "Package ID": {
-      "CRM Apps": "com.hashmicro3.crm.uitc"
+      "CRM Apps": "com.hashmicro3.crm.uitc",
+      "Inventory Apps": "com.hashmicro.inventory.uitc"
     },
     "Bundle ID": {
-      "CRM Apps": "com.hashmicro3.crm.uitc"
+      "CRM Apps": "com.hashmicro3.crm.uitc",
+      "Inventory Apps": "com.hashmicro.inventory.uitc"
     }
   },
   "topdataglobalitsolutions": {
@@ -1041,7 +1046,7 @@
       "HRM Apps": "hmx"
     },
     "Play Console Dashboard": {
-      "HRM Apps": ""
+      "HRM Apps": "4974511372839144354"
     },
     "Firebase Project": "",
     "Project": {
