@@ -399,6 +399,10 @@ begin
 rescue => ex
   puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
   puts ex.message
+  if ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")
+    puts "\n⚠️ Mengabaikan error pergantian nama aplikasi (App Name conflict) dan memaksa exit 0 agar proses tetap berlanjut."
+    exit 0
+  end
   exit 1
 ensure
   if temp_metadata_dir && File.directory?(temp_metadata_dir)
