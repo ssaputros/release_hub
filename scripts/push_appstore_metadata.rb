@@ -391,23 +391,7 @@ begin
       end
 
       # 8b. Run Deliver to upload the new en-US metadata & screenshots
-      begin
-        runner.run
-      rescue => inner_ex
-        if inner_ex.message.include?("app name is already being used") || inner_ex.message.include?("Cannot add localization due to app name")
-          puts "\n⚠️ Peringatan: Nama aplikasi sudah digunakan (App Name conflict)."
-          puts "⚠️ Menghapus name.txt dari metadata dan mencoba upload ulang agar proses (screenshots dll) tetap berjalan..."
-          
-          Dir.glob(File.join(temp_metadata_dir, "**", "name.txt")).each do |name_file|
-            FileUtils.rm_f(name_file)
-          end
-          
-          runner = Deliver::Runner.new(config)
-          runner.run
-        else
-          raise inner_ex
-        end
-      end
+      runner.run
     end
   end
 
@@ -415,6 +399,17 @@ begin
 rescue => ex
   puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
   puts ex.message
+  if (ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")) && !@app_name_retried
+    puts "\n⚠️ Peringatan: Nama aplikasi sudah digunakan (App Name conflict)."
+    puts "⚠️ Menghapus name.txt dari metadata dan mencoba upload ulang agar proses (screenshots dll) tetap berjalan..."
+    
+    Dir.glob(File.join(temp_metadata_dir, "**", "name.txt")).each do |name_file|
+      FileUtils.rm_f(name_file)
+    end
+    
+    @app_name_retried = true
+    retry
+  end
   exit 1
 ensure
   if temp_metadata_dir && File.directory?(temp_metadata_dir)
