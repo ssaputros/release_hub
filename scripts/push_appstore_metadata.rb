@@ -345,7 +345,8 @@ begin
     sync_screenshots: true,
     skip_binary_upload: true,
     ignore_language_directory_validation: true,
-    force: true
+    force: true,
+    skip_metadata: @skip_metadata_fallback || false
   }
 
   if has_custom_icon && File.exist?(project_icon_path)
@@ -397,26 +398,23 @@ begin
 
   puts "\n\n✅ Upload App Store Metadata selesai dengan sukses!"
 rescue => ex
-  puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
-  puts ex.message
-  if (ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")) && !@app_name_retried
-    puts "\n⚠️ Peringatan: Nama aplikasi sudah digunakan (App Name conflict)."
-    puts "⚠️ Menambahkan suffix unik sementara pada name.txt dan mencoba upload ulang agar proses (screenshots dll) tetap berjalan..."
-    
-    Dir.glob(File.join(temp_metadata_dir, "**", "name.txt")).each do |name_file|
-      current_name = File.read(name_file).strip
-      suffix = Time.now.to_i.to_s[-4..-1]
-      new_name = "#{current_name} #{suffix}"
-      # Max length for app name is 30 characters
-      new_name = new_name[0...30]
-      File.write(name_file, new_name)
-      puts "   📝 Nama sementara: #{new_name}"
+  if ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")
+    if !@app_name_retried
+      puts "\n⚠️ Peringatan: Nama aplikasi sudah digunakan (App Name conflict)."
+      puts "⚠️ Apple menolak pembaruan metadata teks. Mencoba mengunggah screenshot saja (skip_metadata)..."
+      @skip_metadata_fallback = true
+      @app_name_retried = true
+      retry
+    else
+      puts "\n⚠️ Peringatan: Apple masih menolak pembaruan meskipun hanya mengunggah screenshot."
+      puts "⚠️ Melewati proses upload metadata ke App Store agar pipeline rilis tetap berlanjut..."
+      exit 0
     end
-    
-    @app_name_retried = true
-    retry
+  else
+    puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
+    puts ex.message
+    exit 1
   end
-  exit 1
 ensure
   if temp_metadata_dir && File.directory?(temp_metadata_dir)
     puts "\n🧹 Membersihkan folder temporary: #{temp_metadata_dir}"
