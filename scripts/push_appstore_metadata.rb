@@ -399,11 +399,22 @@ begin
 rescue => ex
   puts "\n❌ Terjadi kesalahan saat mengunggah metadata App Store:"
   puts ex.message
-  if ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")
+  if (ex.message.include?("app name is already being used") || ex.message.include?("Cannot add localization due to app name")) && !@app_name_retried
     puts "\n⚠️ Peringatan: Nama aplikasi sudah digunakan (App Name conflict)."
-    puts "⚠️ Karena nama konflik, Apple menolak pembuatan lokalisasi baru. Upload metadata dan screenshot DIBATALKAN."
-    puts "⚠️ Memaksa exit 0 agar proses pipeline release.sh tetap berlanjut ke step berikutnya..."
-    exit 0
+    puts "⚠️ Menambahkan suffix unik sementara pada name.txt dan mencoba upload ulang agar proses (screenshots dll) tetap berjalan..."
+    
+    Dir.glob(File.join(temp_metadata_dir, "**", "name.txt")).each do |name_file|
+      current_name = File.read(name_file).strip
+      suffix = Time.now.to_i.to_s[-4..-1]
+      new_name = "#{current_name} #{suffix}"
+      # Max length for app name is 30 characters
+      new_name = new_name[0...30]
+      File.write(name_file, new_name)
+      puts "   📝 Nama sementara: #{new_name}"
+    end
+    
+    @app_name_retried = true
+    retry
   end
   exit 1
 ensure
