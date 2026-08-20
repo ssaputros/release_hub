@@ -739,7 +739,7 @@
       "Inventory Apps": "UITC-Inventory"
     },
     "Play Console Dashboard": {
-      "CRM Apps": "",
+      "CRM Apps": "4972430474879121829",
       "Inventory Apps": ""
     },
     "Firebase Project": "crm-notification-3",
@@ -1091,6 +1091,108 @@
     },
     "Bundle ID": {
       "HMX App": "com.hashmicro.hmx.adityacitrapersada"
+    }
+  },
+  "mitraoto": {
+    "Branch": {
+      "HRM Apps": "mitraoto"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "Mitra Oto HRIS"
+      },
+      "Project Name": "Mitraoto",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://mitraotoabadi.hashmicro.co",
+      "Database": "mitraotoabadi260825",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4974341282391840126"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.mitraoto"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.mitraoto"
+    }
+  },
+  "hyvanew": {
+    "Branch": {
+      "HRM Apps": "hyva-20250926"
+    },
+    "Project": {
+      "App Name": {
+        "HRM Apps": "HYVA HRIS"
+      },
+      "Project Name": "Hyvanew",
+      "Region": "Indonesia",
+      "Type": "HRM Apps",
+      "Base URL": "https://hyva.hashmicro.co",
+      "Database": "hyva-new-live",
+      "Icon": ""
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4974593729895732332"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.hyvanew"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.hyva"
+    }
+  },
+  "hlagarment": {
+    "Branch": {
+      "HMX App": "hlagarment"
+    },
+    "Play Console Dashboard": {
+      "HMX App": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "HLA Garment",
+      "Region": "Indonesia",
+      "App Name": {
+        "HMX App": "MyHLA"
+      },
+      "Type": "HMX App",
+      "Base URL": "https://hla.hashmicro.co",
+      "Database": "",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HMX App": "com.hashmicro.hmx.hlagarment"
+    },
+    "Bundle ID": {
+      "HMX App": "com.hashmicro.hmx.hlagarment"
+    }
+  },
+  "hminternal": {
+    "Branch": {
+      "HMX Apps": "HMX-Internal"
+    },
+    "Play Console Dashboard": {
+      "HMX Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Internal HM",
+      "Region": "Indonesia",
+      "App Name": {
+        "HMX Apps": "Internal HM"
+      },
+      "Type": "HMX Apps",
+      "Base URL": "https://hmx-master-demo.hashmicro.co",
+      "Database": "",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HMX Apps": "com.hashmicro.hmx.internal"
+    },
+    "Bundle ID": {
+      "HMX Apps": "com.hashmicro.hmx.internal"
     }
   }
 }
