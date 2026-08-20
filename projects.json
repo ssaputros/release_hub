@@ -1184,7 +1184,7 @@
         "HMX Apps": "Internal HM"
       },
       "Type": "HMX Apps",
-      "Base URL": "https://hmx-master-demo.hashmicro.co",
+      "Base URL": "https://int.hashmicro.com",
       "Database": "",
       "Icon": ""
     },
