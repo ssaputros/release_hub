@@ -1186,7 +1186,7 @@
       "Type": "HMX App",
       "Base URL": "https://int.hashmicro.com",
       "Database": "",
-      "Icon": ""
+      "Icon": "assets/icons/hmx-icon.png"
     },
     "Package ID": {
       "HMX App": "com.hashmicro.hmx.internal"
@@ -1212,7 +1212,7 @@
       "Type": "HMX App",
       "Base URL": "https://masterdemo.hashmicro.com",
       "Database": "",
-      "Icon": ""
+      "Icon": "assets/icons/hmx-icon.png"
     },
     "Package ID": {
       "HMX App": "com.hashmicro.hmx.dev"
