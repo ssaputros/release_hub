@@ -1169,30 +1169,56 @@
       "HMX App": "com.hashmicro.hmx.hlagarment"
     }
   },
-  "hminternal": {
+  "hmx-002": {
     "Branch": {
-      "HMX Apps": "HMX-Internal"
+      "HMX App": "HMX-Internal"
     },
     "Play Console Dashboard": {
-      "HMX Apps": ""
+      "HMX App": "4976223290339095593"
     },
     "Firebase Project": "",
     "Project": {
       "Project Name": "Internal HM",
       "Region": "Indonesia",
       "App Name": {
-        "HMX Apps": "Internal HM"
+        "HMX App": "Internal HM"
       },
-      "Type": "HMX Apps",
+      "Type": "HMX App",
       "Base URL": "https://int.hashmicro.com",
       "Database": "",
       "Icon": ""
     },
     "Package ID": {
-      "HMX Apps": "com.hashmicro.hmx.internal"
+      "HMX App": "com.hashmicro.hmx.internal"
     },
     "Bundle ID": {
-      "HMX Apps": "com.hashmicro.hmx.internal"
+      "HMX App": "com.hashmicro.hmx.internal"
+    }
+  },
+  "hmx-master-demo": {
+    "Branch": {
+      "HMX App": "Master-Demo"
+    },
+    "Play Console Dashboard": {
+      "HMX App": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "HMX Master Demo",
+      "Region": "Indonesia",
+      "App Name": {
+        "HMX App": "HMX Master Demo"
+      },
+      "Type": "HMX App",
+      "Base URL": "https://masterdemo.hashmicro.com",
+      "Database": "",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HMX App": "com.hashmicro.hmx.dev"
+    },
+    "Bundle ID": {
+      "HMX App": "com.hashmicro.hmx.dev"
     }
   }
 }
