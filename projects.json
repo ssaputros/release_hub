@@ -1220,5 +1220,30 @@
     "Bundle ID": {
       "HMX App": "com.hashmicro.hmx.dev"
     }
+  },
+  "jayarayamobil": {
+    "Branch": {
+      "CRM Apps": "jayarayamobil"
+    },
+    "Play Console Dashboard": {
+      "CRM Apps": ""
+    },
+    "Firebase Project": "crm-notification-3",
+    "Project": {
+      "Project Name": "Jaya Raya Mobil",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "CRM Apps",
+      "URL Live / Staging": "https://jrmtes.hashmicro.co",
+      "Database Live / Staging": "jrmnew-training",
+      "User Login": "admin",
+      "Password Login": "Hash82821Micro#"
+    },
+    "Package ID": {
+      "CRM Apps": "com.hashmicro.crm.jayarayamobil"
+    },
+    "Bundle ID": {
+      "CRM Apps": "com.hashmicro.crm.jayarayamobil"
+    }
   }
 }
