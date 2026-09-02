@@ -346,6 +346,9 @@ action_label() {
         22) echo "Build AAB" ;;
         23) echo "Upload Playstore (AAB)" ;;
         24) echo "Submit Playstore (Playwright UI)" ;;
+        25) echo "Download & Process Icon" ;;
+        26) echo "Open Playstore (Chrome)" ;;
+        27) echo "Open Appstore (Chrome)" ;;
         *) echo "Unknown action" ;;
     esac
 }
@@ -1065,6 +1068,8 @@ fi
 23) Upload Playstore (AAB)
 24) Submit Playstore (Playwright UI)
 25) Download & Process Icon
+26) Open Playstore (Chrome)
+27) Open Appstore (Chrome)
 EOF
                     ACTION_SELECTOR_OUTPUT=$(mktemp)
                     python3 "${SCRIPT_DIR}/scripts/multi_selector.py" "$ACTION_SELECTOR_INPUT" "$ACTION_SELECTOR_OUTPUT"
@@ -1187,6 +1192,9 @@ if [ -n "$PROJECT" ] && [ ${#SELECTED_TARGETS[@]} -eq 0 ]; then
         elif [[ "$type_clean" == "HRM Apps" ]]; then
             APP_NAME_VAL="${APP_NAME} HRIS"
             PKG_VAL="com.hashmicro.eva.${ID}"
+        elif [[ "$type_clean" == "HMX App" ]]; then
+            APP_NAME_VAL="${APP_NAME}"
+            PKG_VAL="com.hashmicro.hmx.${ID}"
         else
             APP_NAME_VAL="${APP_NAME}"
             PKG_VAL="com.hashmicro.eva.${ID}"
@@ -1271,9 +1279,9 @@ for action in "${ACTION_ARRAY[@]}"; do
     if [ -z "$action" ]; then
         continue
     fi
-    if ! [[ "$action" =~ ^([1-9]|1[0-9]|2[0-5])$ ]]; then
+    if ! [[ "$action" =~ ^([1-9]|1[0-9]|2[0-7])$ ]]; then
         echo "❌ Aksi tidak valid: $action"
-        echo "Gunakan nomor aksi 1-25. Lihat daftar dengan: release --help"
+        echo "Gunakan nomor aksi 1-27. Lihat daftar dengan: release --help"
         exit 1
     fi
     if [[ "$action" == "16" || "$action" == "19" ]]; then
@@ -1549,6 +1557,21 @@ execute_action() {
                    else
                        echo "⚠️ URL Icon tidak ditemukan di projects.json untuk $TARGET_ID"
                    fi
+                   ;;
+                26)
+                   echo "🌐 Membuka Playstore untuk $APP_NAME..."
+                   PLAY_CONSOLE_ID=$(jq -r ".\"$TARGET_ID\".\"Play Console Dashboard\".\"$type_clean\" // empty" "$PROJECT_FILE")
+                   if [ -n "$PLAY_CONSOLE_ID" ] && [ "$PLAY_CONSOLE_ID" != "null" ]; then
+                       echo "  Membuka Play Console (Dashboard ID: $PLAY_CONSOLE_ID)..."
+                       open -a "Google Chrome" "https://play.google.com/console/developers/app/${PLAY_CONSOLE_ID}/app-dashboard" || open "https://play.google.com/console/developers/app/${PLAY_CONSOLE_ID}/app-dashboard"
+                   else
+                       echo "  Dashboard ID tidak ditemukan, membuka public Play Store..."
+                       open -a "Google Chrome" "https://play.google.com/store/apps/details?id=$APP_PACKAGE_NAME" || open "https://play.google.com/store/apps/details?id=$APP_PACKAGE_NAME"
+                   fi
+                   ;;
+                27)
+                   echo "🌐 Membuka Appstore untuk $APP_NAME..."
+                   open -a "Google Chrome" "https://appstoreconnect.apple.com/apps" || open "https://appstoreconnect.apple.com/apps"
                    ;;
             esac
         done

@@ -159,10 +159,33 @@ else
   input_package_name = $stdin.gets.chomp.strip
   package_name = input_package_name.empty? ? default_package_name : input_package_name
 
-  # Normalize directory type name (HRM Apps -> Hrm Apps)
-  folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+  # Select destination folder type
+  store_listings_dir = File.join(project_root, "store_listings")
+  available_folders = Dir.entries(store_listings_dir).select { |entry| File.directory?(File.join(store_listings_dir, entry)) && !entry.start_with?('.') }.sort
 
-  metadata_root = File.join(project_root, "store_listings", folder_type)
+  puts "\n============================================================"
+  puts "📂 PILIH FOLDER TUJUAN METADATA (Template Type)"
+  puts "============================================================"
+  available_folders.each_with_index do |f, idx|
+    puts "#{idx + 1}) #{f}"
+  end
+  puts "------------------------------------------------------------"
+  print "Pilihan Anda (Default: 1): "
+  folder_choice = $stdin.gets.chomp.strip
+  
+  if folder_choice.empty?
+    folder_type = available_folders.first
+  else
+    folder_idx = folder_choice.to_i - 1
+    if folder_idx >= 0 && folder_idx < available_folders.length
+      folder_type = available_folders[folder_idx]
+    else
+      puts "❌ Pilihan tidak valid."
+      exit 1
+    end
+  end
+
+  metadata_root = File.join(store_listings_dir, folder_type)
   metadata_android_path = File.join(metadata_root, "android")
 
   # Clean existing directory to prevent Supply setup from skipping download

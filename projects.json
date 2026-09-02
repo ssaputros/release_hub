@@ -1234,16 +1234,78 @@
       "Product": "HM3",
       "Platform": "Android, iOS",
       "Application to be Used": "CRM Apps",
-      "URL Live / Staging": "https://jrmtes.hashmicro.co",
-      "Database Live / Staging": "jrmnew-training",
       "User Login": "admin",
-      "Password Login": "Hash82821Micro#"
+      "Password Login": "Hash82821Micro#",
+      "Base URL": "https://jrmtes.hashmicro.co",
+      "Database": "jrmnew-training",
+      "Region": "Indonesia"
     },
     "Package ID": {
       "CRM Apps": "com.hashmicro.crm.jayarayamobil"
     },
     "Bundle ID": {
       "CRM Apps": "com.hashmicro.crm.jayarayamobil"
+    }
+  },
+  "esquiretech": {
+    "Branch": {
+      "HRM Apps": "esquiretech"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Esquiretech Corp.",
+      "Region": "Indonesia",
+      "App Name": {
+        "HRM Apps": "Esquiretech Corp."
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://esquiretech.x2.hashmicro.co",
+      "Database": "",
+      "Icon": "assets/icons/esquirelogo.png"
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.hmx.esquiretech"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.hmx.esquiretech"
+    }
+  },
+  "sezgamacendekia": {
+    "Branch": {
+      "Approval Apps": "sezgamacendekia",
+      "HRM Apps": "sezgamacendekia"
+    },
+    "Play Console Dashboard": {
+      "Approval Apps": "",
+      "HRM Apps": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "SEZ Gama Cendekia",
+      "Region": "Indonesia",
+      "App Name": {
+        "Approval Apps": "SEZ HRIS",
+        "HRM Apps": "SEZ HRIS"
+      },
+      "Type": "Approval Apps, HRM Apps",
+      "Base URL": "https://sezgamacendekia.hashmicro.co",
+      "Database": "SGC-Live",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "Approval Apps, HRM Apps",
+      "Localization": "Indonesia",
+      "Icon": "logo-SEZ-Gama-Cendekia-removebg-preview (1).png"
+    },
+    "Package ID": {
+      "Approval Apps": "com.hashmicro.approval.sezgamacendekia",
+      "HRM Apps": "com.hashmicro.eva.sezgamacendekia"
+    },
+    "Bundle ID": {
+      "Approval Apps": "com.hashmicro.approval.sezgamacendekia",
+      "HRM Apps": "com.hashmicro.eva.sezgamacendekia"
     }
   }
 }

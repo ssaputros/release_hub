@@ -144,10 +144,33 @@ else
   input_bundle_id = $stdin.gets.chomp.strip
   bundle_id = input_bundle_id.empty? ? default_bundle_id : input_bundle_id
 
-  # Normalize directory type name (HRM Apps -> Hrm Apps)
-  folder_type = app_type == "HRM Apps" ? "Hrm Apps" : app_type
+  # Select destination folder type
+  store_listings_dir = File.join(project_root, "store_listings")
+  available_folders = Dir.entries(store_listings_dir).select { |entry| File.directory?(File.join(store_listings_dir, entry)) && !entry.start_with?('.') }.sort
 
-  metadata_root = File.join(project_root, "store_listings", folder_type)
+  puts "\n============================================================"
+  puts "📂 PILIH FOLDER TUJUAN METADATA (Template Type)"
+  puts "============================================================"
+  available_folders.each_with_index do |f, idx|
+    puts "#{idx + 1}) #{f}"
+  end
+  puts "------------------------------------------------------------"
+  print "Pilihan Anda (Default: 1): "
+  folder_choice = $stdin.gets.chomp.strip
+  
+  if folder_choice.empty?
+    folder_type = available_folders.first
+  else
+    folder_idx = folder_choice.to_i - 1
+    if folder_idx >= 0 && folder_idx < available_folders.length
+      folder_type = available_folders[folder_idx]
+    else
+      puts "❌ Pilihan tidak valid."
+      exit 1
+    end
+  end
+
+  metadata_root = File.join(store_listings_dir, folder_type)
   metadata_ios_path = File.join(metadata_root, "ios")
 
   # Ensure metadata directory exists
@@ -177,13 +200,24 @@ end
 using_api_key = !(issuer_id.nil? || issuer_id.empty?)
 key_filepath = AppStoreConnectAuthHelper.resolve_api_key_path(project_root: project_root) if using_api_key
 
-# 5. Build Deliver Options
+# 5. Prompt for Version Type (Live or Draft)
+puts "\n============================================================"
+puts "📝 PILIH VERSI METADATA APP STORE"
+puts "============================================================"
+puts "1) Versi Live (Sudah Rilis di App Store)"
+puts "2) Versi Draft / Edit (Prepare for Submission, In Review, dll)"
+puts "------------------------------------------------------------"
+print "Pilihan Anda (Default: 1): "
+version_choice = $stdin.gets.chomp.strip
+use_live = (version_choice != '2')
+
+# 6. Build Deliver Options
 options = {
   app_identifier: bundle_id,
   metadata_path: metadata_ios_path,
   screenshots_path: File.join(metadata_ios_path, 'screenshots'),
   skip_screenshots: false,
-  use_live_version: true,
+  use_live_version: use_live,
   force: true
 }
 
@@ -218,10 +252,14 @@ begin
       require 'deliver/setup'
       app = Deliver.cache[:app]
       platform = Spaceship::ConnectAPI::Platform.map(config[:platform])
-      v = app.get_latest_app_store_version(platform: platform)
+      if config[:use_live_version]
+        v = app.get_live_app_store_version(platform: platform)
+      else
+        v = app.get_edit_app_store_version(platform: platform) || app.get_latest_app_store_version(platform: platform)
+      end
 
       if v.nil?
-        raise "Tidak ada versi App Store yang ditemukan untuk aplikasi ini."
+        raise "Tidak ada versi App Store yang sesuai (Live/Draft) ditemukan untuk aplikasi ini."
       end
 
       # Unduh file metadata lokal

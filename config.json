@@ -41,7 +41,7 @@
                 "app_description": "This app is a human resource application that is used by internal company in managing human resources which includes employee administration data, employee attendance data, employee overtime data, employee leave data, reimbursement, payroll and others."
             }
         },
-        "HMX Apps": {
+        "HMX App": {
             "prefix": "com.hashmicro.hmx",
             "location": "~/Projects/HashMicro/hmx-002/hmx/module/basic/hmx_capacitor/native",
             "gdrive_folder_id": "1RrDc3YD03u5fixp1rs1qRb9FZi_8XhDa",
