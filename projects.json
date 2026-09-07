@@ -1032,13 +1032,13 @@
       "Icon": ""
     },
     "Package ID": {
-      "HRM Apps": "com.hashmicro.hmx.exoclinic"
+      "HRM Apps": "com.hashmicro.hmx.exoclinicnew"
     },
     "Bundle ID": {
-      "HRM Apps": "com.hashmicro.hmx.exoclinic"
+      "HRM Apps": "com.hashmicro.hmx.exoclinicnew"
     },
     "Play Console Dashboard": {
-      "HRM Apps": "4975415809634632101"
+      "HRM Apps": "4973632498628082627"
     }
   },
   "hmx": {
@@ -1306,6 +1306,36 @@
     "Bundle ID": {
       "Approval Apps": "com.hashmicro.approval.sezgamacendekia",
       "HRM Apps": "com.hashmicro.eva.sezgamacendekia"
+    }
+  },
+  "rbq": {
+    "Branch": {
+      "HRM Apps": "rbq"
+    },
+    "Play Console Dashboard": {
+      "HRM Apps": "4973943251084155827"
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Reyes Barbecue (RBQ) Food Concepts Inc.",
+      "Region": "Philippines",
+      "Product": "HM3",
+      "Platform": "Android, iOS",
+      "Application to be Used": "HRM Apps",
+      "Localization": "Philippines",
+      "App Name": {
+        "HRM Apps": "RBQ HRIS"
+      },
+      "Type": "HRM Apps",
+      "Base URL": "https://rbq.hash-013.com",
+      "Database": "rbq-score22-ph-db",
+      "Icon": ""
+    },
+    "Package ID": {
+      "HRM Apps": "com.hashmicro.eva.rbq"
+    },
+    "Bundle ID": {
+      "HRM Apps": "com.hashmicro.eva.rbq"
     }
   }
 }
