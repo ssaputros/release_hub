@@ -1249,28 +1249,28 @@
   },
   "esquiretech": {
     "Branch": {
-      "HRM Apps": "esquiretech"
+      "HMX App": "release-mobile"
     },
     "Play Console Dashboard": {
-      "HRM Apps": ""
+      "HMX App": "4972685401397664169"
     },
     "Firebase Project": "",
     "Project": {
       "Project Name": "Esquiretech Corp.",
       "Region": "Indonesia",
       "App Name": {
-        "HRM Apps": "Esquiretech Corp."
+        "HMX App": "Esquiretech Corp."
       },
-      "Type": "HRM Apps",
+      "Type": "HMX App",
       "Base URL": "https://esquiretech.x2.hashmicro.co",
       "Database": "",
       "Icon": "assets/icons/esquirelogo.png"
     },
     "Package ID": {
-      "HRM Apps": "com.hashmicro.hmx.esquiretech"
+      "HMX App": "com.hashmicro.hmx.esquiretech"
     },
     "Bundle ID": {
-      "HRM Apps": "com.hashmicro.hmx.esquiretech"
+      "HMX App": "com.hashmicro.hmx.esquiretech"
     }
   },
   "sezgamacendekia": {
@@ -1315,7 +1315,7 @@
     "Play Console Dashboard": {
       "HRM Apps": "4973943251084155827"
     },
-    "Firebase Project": "",
+    "Firebase Project": "hashmicro-production-20",
     "Project": {
       "Project Name": "Reyes Barbecue (RBQ) Food Concepts Inc.",
       "Region": "Philippines",
@@ -1336,6 +1336,32 @@
     },
     "Bundle ID": {
       "HRM Apps": "com.hashmicro.eva.rbq"
+    }
+  },
+  "deltaintertrade": {
+    "Branch": {
+      "HMX App": "release-mobile"
+    },
+    "Play Console Dashboard": {
+      "HMX App": ""
+    },
+    "Firebase Project": "",
+    "Project": {
+      "Project Name": "Delta Intertrade Sdn Bhd",
+      "Region": "Malaysia",
+      "App Name": {
+        "HMX App": "Delta Inventory"
+      },
+      "Type": "HMX App",
+      "Base URL": "https://deltaintertrade.intx.hashmicro.co",
+      "Database": "deltaintertrade",
+      "Icon": "icon/deltaintertrade.png"
+    },
+    "Package ID": {
+      "HMX App": "com.hashmicro.hmx.deltaintertrade"
+    },
+    "Bundle ID": {
+      "HMX App": "com.hashmicro.hmx.deltaintertrade"
     }
   }
 }
