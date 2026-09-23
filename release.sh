@@ -1390,6 +1390,8 @@ execute_action() {
         echo "🚀 MEMPROSES PROJECT: $TARGET_ID"
         echo "============================================================"
         
+        export FILTERED_TYPE=$(get_active_types "$TARGET_ID")
+        
         # Target-level actions
         case "$action" in
             6) 
