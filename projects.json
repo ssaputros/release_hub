@@ -1532,32 +1532,32 @@
       "HMX App": "4975136879694301833"
     }
   },
-  "umaranikmatboga": {
+  "umaragrupdev": {
     "Branch": {
-      "Inventory Apps": "umaranikmatboga"
+      "HMX App": "release-mobile"
     },
     "Play Console Dashboard": {
-      "Inventory Apps": ""
+      "HMX App": ""
     },
     "Firebase Project": "",
     "Project": {
       "Project Name": "Umara Nikmat Boga",
       "Product": "HMX",
       "Platform": "Android, iOS",
-      "Application to be Used": "Inventory Apps",
+      "Application to be Used": "HMX App",
       "App Name": {
-        "Inventory Apps": "Umara Inventory"
+        "HMX App": "Umara Inventory"
       },
-      "Type": "Inventory Apps",
+      "Type": "HMX App",
       "Base URL": "https://umaragrupdev.hash-028.com",
       "Database": "",
       "Icon": ""
     },
     "Package ID": {
-      "Inventory Apps": "com.hashmicro.inventory.umaranikmatboga"
+      "HMX App": "com.hashmicro.hmx.umaragrupdev"
     },
     "Bundle ID": {
-      "Inventory Apps": "com.hashmicro.inventory.umaranikmatboga"
+      "HMX App": "com.hashmicro.hmx.umaragrupdev"
     }
   }
 }
